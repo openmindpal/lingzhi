@@ -1,0 +1,19 @@
+# 族2b 操作·力觉(family=manipulation)——reach_contact 实例
+# 契约: obs_dim=109(97+contact12,k=2: 0=左腕 1=右腕),obs_contact=true,无 goal 块
+# 力觉语义(引擎 §7.2): contact 块 = 到位判据;插入/按压类以力特征收敛
+# 诚实边界: 参考环境无按压场景资产(接触事件稀疏)——本任务验证 IO/装配/门;
+#           生产训练需按压场景资产(场景扩展项)+ 腕部六维力传感(真机硬前提)
+name: family_reach_contact
+row_name: reach_contact
+kind: policy
+family: manipulation
+obs_mode: contact
+priority: task
+control_hz: 50
+episode_s: 4
+action_scale: 0.2
+soft_limit_margin: 0.05
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, contact_noise: 0.05}
+f_force_n: 20.0
+reward: {ee_err: 0.5, progress: 1.0, force: 0.01, action_rate: 0.02}
+gate: {ee_err_m: 0.15}

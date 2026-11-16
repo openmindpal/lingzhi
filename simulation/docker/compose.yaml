@@ -1,0 +1,55 @@
+#
+# 灵智系统仿真验证平台——被验系统 = 灵智系统（引擎为灵智系统专有组件，见 simulation/RELEASE.md 保密声明）
+#
+# 用法（仓库根执行）:
+#   一键复现（7 套件全绿 = 退出码 0）:
+#     docker compose -f simulation/docker/compose.yaml build
+#     docker compose -f simulation/docker/compose.yaml run --rm verifier
+#     docker compose -f simulation/docker/compose.yaml --profile live up -d bridge
+#     docker compose -f simulation/docker/compose.yaml run --rm consumer
+#   演示仪表盘:
+#     docker compose -f simulation/docker/compose.yaml --profile live up -d demo
+#
+# DDS 发现：compose 默认网络内多播可达——bridge/consumer/engine 同网即同域。
+
+services:
+  # ── 一键复现：全套件（bridge_policy_loop 面）──
+  verifier:
+    build:
+      context: ../..
+      dockerfile: simulation/docker/Dockerfile
+    image: mindpal-sim-verifier
+    command: ["python3", "-m", "runner.run_all"]
+
+  # ── 虚拟机器人（桥接器常驻——live 组）──
+  bridge:
+    image: mindpal-sim-verifier
+    command: ["python3", "-m", "bridge.server",
+              "--model", "assets/models/arm_6dof.xml",
+              "--package", "packages/sim-arm-6dof/body-package.toml",
+              "--speed", "1.0"]
+    profiles: ["live"]
+    ports:
+      - "8284:8284"   # 相机帧（http_image 同通路）
+
+  consumer:
+    image: mindpal-sim-verifier
+    command: ["/opt/mpdds/std_probe", "42", "mp/sim/arm6/lowstate"]
+    profiles: ["live"]
+    depends_on:
+      - bridge
+
+  #   引擎策略行推理 → DDS(rt/lowcmd) → 桥接器(resident MuJoCo) → DDS(rt/lowstate) → 观测装配
+  engineloop:
+    image: mindpal-sim-verifier
+    command: ["sh", "-c",
+      "MINDPAL_SIM_MODEL=/build/apps/device-agent-rs/fixtures/tri-family/assets/tri_body.xml python3 -m bridge.joint_sim_shim --resident & sleep 1; /build/tri_libtest tri_ --test-threads 1 --ignored"]
+    profiles: ["engine"]
+
+  # ── 演示仪表盘 ──
+  demo:
+    image: mindpal-sim-verifier
+    command: ["python3", "-m", "demo.serve", "--port", "8089"]
+    profiles: ["live"]
+    ports:
+      - "8089:8089"

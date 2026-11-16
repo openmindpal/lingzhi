@@ -1,0 +1,14 @@
+# PPO 超参模板(参考后端 = rltrain/ppo.py;isaaclab 后端同一超参口径)
+lr: 3e-4
+gamma: 0.99
+lam: 0.95            # GAE
+clip: 0.2
+epochs: 4
+minibatch: 512
+ent_coef: 0.0
+vf_coef: 0.5
+hidden: [256, 256]
+envs_ref: 4096        # GPU 规模(isaaclab 后端)——参考后端默认 16~64(单机)
+note: >-
+  收敛判据 = 奖励平台 + 验收门通过(eval_gate),不以固定迭代数为准;
+  步数预算见平台架构文档 §10(平衡 1~5B / 形变 0.5~3B / 操作 1~10B)

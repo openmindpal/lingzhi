@@ -1,0 +1,21 @@
+# 运动模式级原语: 全身力量协同(重物平移/搬运/推拉)——manipulation 制式实例(contact)
+# 力学结构 = 腿+躯干+臂联合发力链: 下肢蹬地→躯干姿态→臂持物(全身参与,非臂域孤立)
+#   持物行走耦合: 重物重心偏移随步态摆动——balance 与 manipulation 的交界档
+# 负荷质量/摩擦域随机化(轻搬~重推连续);判据 = 负荷位移到位 + 全程姿态稳定(不过载不倾覆)
+name: family_heavy
+row_name: heavy_haul
+kind: policy
+family: manipulation
+obs_mode: goal_contact
+priority: task
+control_hz: 50
+episode_s: 10
+action_scale: 0.35
+soft_limit_margin: 0.05
+assets: {objects: true}
+load: {mass_kg: [3.0, 15.0], friction: [0.4, 0.9]}
+goal_box: [[-0.5, 1.2], [-0.5, 0.5], [0.0, 0.6]]   # 负荷位移目标(基座系)
+goal_f_range: [0.0, 1.0]                            # 力量档连续(轻搬~重推)
+randomize: {imu_noise: 0.003, encoder_noise: 0.002, load_mass_jitter: 0.3}
+reward: {load_progress: 16.0, posture_upright: 3.0, tau_bound: 2.0, action_rate: 0.01, slip: -6.0}
+gate: {load_displacement_m: 0.5, no_fall: 1}

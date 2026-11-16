@@ -1,0 +1,18 @@
+{
+ "_comment": "冒烟级收敛基线——门的是没训崩,不是训得好;floor=实测×0.6",
+ "machine": "windows-x64-reference",
+ "family_balance": {
+  "ep_ret_mean": 71.625,
+  "floor": 42.975,
+  "iters": 2,
+  "steps": 24,
+  "seed": 0
+ },
+ "family_reach": {
+  "ep_ret_mean": -30.34,
+  "floor": -45.51,
+  "iters": 2,
+  "steps": 24,
+  "seed": 0
+ }
+}

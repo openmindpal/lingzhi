@@ -1,0 +1,23 @@
+# 快脑 tactician(战术层实例——引擎内零快脑逻辑)
+# 契约(contracts/fastbrain_contract.md): 输入 = 肌肉同源观测(97)+当前 goal(4)=101;输出 = goal(4)
+# goal_stream 交叉校验: 须对应存在且 goal_conditioned 的策略行(reach_goal)
+# 训练方式: 参考蒸馏(解析追靶专家,限速/限域)——生产快脑 = RL 外环(架构 §4.6 预留,诚实边界)
+name: fastbrain_tactician
+row_name: tactician
+kind: fastbrain
+family: manipulation          # 快脑服务的肌肉族(goal_stream = reach_goal)
+obs_mode: goal
+control_hz: 50
+episode_s: 4
+base_task: family_reach
+goal_stream: reach_goal
+rate_hz: 50.0
+budget_ms: 60000
+# goal 域(与 family_reach 一致——导出 clamp 头同源)
+goal_box: [[0.15, 0.5], [-0.45, 0.0], [0.2, 0.7]]
+expert_rate: 0.02        # 专家每拍 goal 步长上限(m)——防抖
+rate_penalty: 0.1        # BC 损失的 goal 变化率惩罚权重
+bc_samples: 4096
+bc_epochs: 20
+eval_steps: 50
+gate: {goal_dist_m: 0.5}

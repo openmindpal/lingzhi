@@ -1,0 +1,185 @@
+# ─────────────────────────────────────────────────────────────
+
+#
+# 用途隔离：transport=dds 指向本地 DDS 域 42（桥接器 = 虚拟机器人端点）。
+# 线上契约：指令 mindpal::JointTargets（428B CDR-LE）→ 状态 mindpal::JointStates
+# ─────────────────────────────────────────────────────────────
+
+[core]
+package_name = "sim-arm-6dof"
+version = "0.1.0"
+word_schema_version = 1
+abi_version = 1
+runtime_min = "0.9.0"
+certified_by = "sim-local"
+
+[protocol]
+transport = "dds"
+frequency_hz = 50                     # 策略拍 50Hz；子步比 = 500/50 = 10
+heartbeat_ms = 20
+timeout_ms = 100
+
+[protocol.joint_mapping]
+ordered = [
+  "shoulder_pan", "shoulder_pitch", "elbow",
+  "wrist_pitch", "wrist_roll", "wrist_yaw",
+]
+
+[protocol.dds]
+domain_id = 42                        # 本地仿真隔离域（与生产域 0 无关）
+participant_name = "mindpal-agent"
+
+[protocol.dds.actuator_topics.joint_cmd]
+topic_name = "mp/sim/arm6/lowcmd"
+type_name = "mindpal::JointTargets"
+reliability = "reliable"
+history_depth = 1
+
+[protocol.dds.sensor_topics.joint_state]
+topic_name = "mp/sim/arm6/lowstate"
+type_name = "mindpal::JointStates"
+reliability = "best_effort"           # wrapper reader 同 QoS（wrapper.c:81）
+history_depth = 1
+motor_fields = ["f32:q", "f32:dq", "f32:tau"]   # b_max = 3 → 宽度集 §6.3
+
+[protocol.dds.qos]
+preset = "control"
+
+[profile]
+body_height_m = 0.45
+state_order = [
+  "shoulder_pan", "shoulder_pitch", "elbow",
+  "wrist_pitch", "wrist_roll", "wrist_yaw",
+]                                     # = 模型关节序——桥接器启动校验
+
+[profile.joints.shoulder_pan]
+dh = { a = 0.0, alpha = 0.0, d = 0.03, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }    # = arm_6dof.xml range 同值（仿真=部署同限位）
+sign = 1
+group = "arm"
+
+[profile.joints.shoulder_pitch]
+dh = { a = 0.0, alpha = 1.5708, d = 0.10, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "arm"
+
+[profile.joints.elbow]
+dh = { a = 0.0, alpha = 0.0, d = 0.12, theta = 0.0 }
+limits = { min = -2.0, max = 0.3 }
+sign = 1
+group = "arm"
+
+[profile.joints.wrist_pitch]
+dh = { a = 0.0, alpha = 0.0, d = 0.10, theta = 0.0 }
+limits = { min = -1.2, max = 1.2 }
+sign = 1
+group = "arm"
+
+[profile.joints.wrist_roll]
+dh = { a = 0.0, alpha = 1.5708, d = 0.06, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "arm"
+
+[profile.joints.wrist_yaw]
+dh = { a = 0.0, alpha = 0.0, d = 0.05, theta = 0.0 }
+limits = { min = -1.2, max = 1.2 }
+sign = 1
+group = "arm"
+
+[profile.stiffness_tiers]
+soft = 0.3
+normal = 0.7
+firm = 1.0
+
+[profile.dynamics]
+max_velocity_rad_s = 6.0
+kp = 40.0                             # 桥接器关节层 PD 伺服增益（JointTargets.kp/kd 同源）
+ki = 0.0
+kd = 2.0
+
+[profile.timing]
+hold_timeout_s = 30
+auto_return_ms = 1200
+inject_window_ms = 10000
+
+[safety]
+# contact_force_limit_n 未声明——模型无力觉传感（n_ft=0 诚实缺省），联锁无从判定；
+# 声明无传感的联锁 = 伪装保护，违反诚实纪律。ft 模型就位后按规格书声明。
+
+[safety.stream_loss]
+action = "damping"
+
+[safety.estop]
+action = "freeze"
+
+[calibration]
+amplitude_scale = 1.0
+[calibration.neutral]
+shoulder_pan = 0.0
+shoulder_pitch = 0.0
+elbow = 0.0
+wrist_pitch = 0.0
+wrist_roll = 0.0
+wrist_yaw = 0.0
+
+[acquisition]
+[[acquisition.cameras]]
+kind = "http_image"
+device = "http://127.0.0.1:8284/frame.jpg"
+role = "main"
+depth = false
+intrinsics = { fx = 579.4, fy = 579.4, cx = 320.0, cy = 240.0 }  # f = h/(2·tan(fovy/2))，fovy=45°/480p
+
+
+[[words.rows]]
+name = "reach_goal"
+sides = ["l", "r"]
+when_to_use = '到达认知层注入的 goal_x/goal_y/goal_z 目标（goal_conditioned 操作——任务分解在认知层，参数化派发）'
+[words.rows.manipulate]
+policy = "reach_goal"
+task = "reach"
+max_duration_ms = 25000
+force = "normal"
+
+# ── policies：测试策略（tools/gen_sim_policies.py 生成——单 Gemm 可解析预测）──
+# obs 布局：[q(6)|dq(6)|tau(6)|imu(10)|goal(4)] = 32（宽度集：3·6+10+4）
+[[policies.rows]]
+name = "reach_goal"
+family = "manipulation"
+weights = "policies/reach.onnx"
+frequency_hz = 50.0
+priority = "task"
+obs_dim = 32
+goal_conditioned = true
+
+# ── fastbrains：测试快脑（输入 = 肌肉观测原样 32——含 goal 块，逐位同源）──
+[[policies.rows]]
+name = "greet_wave"
+family = "expression"
+weights = "policies/greet_wave.onnx"
+frequency_hz = 50.0
+priority = "task"
+obs_dim = 28
+goal_conditioned = false
+
+[[fastbrains.rows]]
+name = "tactician"
+kind = "onnx"
+weights = "fastbrains/tactician.onnx"
+outputs = { goal_stream = "reach_goal" }
+when_to_use = 'reach_goal 的战术层——按 q0 反馈持续微调 goal_x（活反馈环演示脑）'
+rate_hz = 20.0
+budget_ms = 1200
+
+
+[[words.rows]]
+name = "grasp_cup"
+sides = ["r"]
+when_to_use = '抓取桌面登记实体（演示操作词绑定——reach_goal 策略闭环）'
+[words.rows.manipulate]
+policy = "reach_goal"
+task = "grasp"
+max_duration_ms = 30000
+force = "normal"

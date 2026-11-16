@@ -1,0 +1,135 @@
+# G1 训练本体规格(参数化)——资产精化的回填入口
+# 权威分层:
+#   关节名/序/限位/中立位/KP·KD = apps/body-packages/unitree-g1/body-package.toml(不在此复制)
+#   几何/质量/手/物体 = 本文件([样例]值——按宇树 G1 规格书/实机标定回填)
+# 生成器 = rltrain/mjcf_gen.py(冒烟拓扑 + 本规格叠加项 → 训练变体 XML,自动生成)
+
+profile: g1_refined
+
+# ── 质量标定(简化标度法: 全体 body 质量等比缩放到目标总质量) ──
+total_mass_kg: 35.0          # [样例] 宇树 G1 整机质量规格——规格书回填
+# 完整本体重精化(连杆几何/惯量/执行器动力学) = 官方资产替换点:
+#   用宇树官方 MJCF/URDF 替换生成基座(拓扑接口不变——关节名/序/限位与包同源)
+
+# ── 灵巧手(外接设备,五指,默认关——开启 = 手指级抓握训练) ──
+hands:
+  enabled: false
+  model: five-finger         # 五指灵巧手[样例]——按实际选型/SDK 命名回填
+  fingers:                   # 每指段链[样例]: 拇指2+食指2+中指2+无名指1+小指1 = 8 关节/手
+    - name: thumb
+      segs:
+        - {j: thumb_abd,  axis: "0 0 1", len_m: 0.025}
+        - {j: thumb_flex, axis: "0 1 0", len_m: 0.055}
+    - name: index
+      segs:
+        - {j: index_flex, axis: "0 1 0", len_m: 0.055}
+        - {j: index_dist, axis: "0 1 0", len_m: 0.045}
+    - name: middle
+      segs:
+        - {j: middle_flex, axis: "0 1 0", len_m: 0.055}
+        - {j: middle_dist, axis: "0 1 0", len_m: 0.045}
+    - name: ring
+      segs:
+        - {j: ring_flex, axis: "0 1 0", len_m: 0.050}
+    - name: pinky
+      segs:
+        - {j: pinky_flex, axis: "0 1 0", len_m: 0.040}
+  limits_rad:                # [样例]
+    thumb_abd: [-0.3, 0.6]
+    thumb_flex: [-0.2, 1.2]
+    index_flex: [-0.2, 1.2]
+    index_dist: [-0.2, 1.2]
+    middle_flex: [-0.2, 1.2]
+    middle_dist: [-0.2, 1.2]
+    ring_flex: [-0.2, 1.2]
+    pinky_flex: [-0.2, 1.2]
+  finger_r_m: 0.008
+  palm_lwh_m: [0.09, 0.02, 0.10]
+  action_scale_rad: 0.45     # 手指动作幅度(屈指全闭需大行程——独立于臂 scale)
+  mass_kg: 0.35              # 每手质量[样例]
+
+# ── 被抓物体/支承面(grasp 任务)——世界系坐标(骨盆世界高 = 1.0) ──
+objects:
+  - name: table
+    kind: box
+    half_lwh_m: [0.15, 0.15, 0.04]
+    mass_kg: 5.0
+    static: true             # 静态支承面(无 freejoint)
+    pos_m: [0.38, -0.25, 1.11]
+  - name: can
+    kind: cylinder
+    r_m: 0.033
+    h_m: 0.115
+    mass_kg: 0.30            # [样例] 330ml 罐
+    pos_m: [0.38, -0.25, 1.21]   # 桌面上(table top = 1.15)
+  - name: threat_ball
+    kind: sphere
+    r_m: 0.12
+    mass_kg: 3.0                # [样例] 逼近物(拳击/闪避训练用——脚本化运动)
+    pos_m: [1.0, 0.0, 1.0]
+  - name: cloth
+    kind: flex_cloth            # 柔性布(MuJoCo flex 网格——柔性物体操作)
+    n_grid: [8, 8]
+    size_m: [0.24, 0.24]
+    pos_m: [0.38, 0.10, 1.16]   # 桌面另一侧
+  - name: cup
+    kind: open_box              # 四壁方杯(倒水容器)
+    half_lwh_m: [0.035, 0.035, 0.05]
+    wall_t: 0.004
+    mass_kg: 0.08
+    static: true
+    pos_m: [0.30, -0.25, 1.13]  # 桌上
+  - name: water
+    kind: particles             # 流体代理 = 杯内 N 粒小球(洒出计数判定)
+    n: 24
+    r_m: 0.007
+    fill_pos_m: [0.30, -0.25, 1.14]
+  - name: bottle
+    kind: cylinder
+    r_m: 0.04
+    h_m: 0.24
+    mass_kg: 0.45            # [样例] 双手协同对象(左手扶稳/右手操作)
+    pos_m: [0.35, -0.20, 1.27]
+  - name: pen
+    kind: capsule
+    r_m: 0.006
+    h_m: 0.14                # 半长——总长 0.14? capsule fromto 用半长 0.07
+    mass_kg: 0.01            # [样例] 手内精细对象(笔)
+    pos_m: [0.05, 0.12, 1.00]   # 重置时由环境重排到指尖
+  - name: needle_plate
+    kind: needle_plate          # 穿针: 孔板(3mm 缝)+ 针(装右腕)
+    hole_gap_m: 0.003
+    needle_len_m: 0.06
+    needle_r_m: 0.0008
+    pos_m: [0.40, -0.30, 1.15]
+  - name: intercept_ball
+    kind: mocap_ball            # 拦截训练球(运动学下落——时间同步到达训练)
+    r_m: 0.05
+    mass_kg: 0.2                # [样例]
+    pos_m: [0.30, -0.35, 2.00]  # 起始高位,匀速下降
+  - name: strike_post
+    kind: cylinder              # 击打立柱(静态)
+    r_m: 0.03
+    h_m: 0.30
+    mass_kg: 2.0
+    static: true
+    pos_m: [0.42, -0.05, 1.05]
+  - name: strike_ball
+    kind: sphere
+    r_m: 0.05
+    mass_kg: 0.15               # [样例] 击打目标球(立于柱顶,受击飞出)
+    pos_m: [0.42, -0.05, 1.28]
+
+# ── 按压面(reach_contact 生产训练) ──
+press_wall:
+  enabled: false
+  pos_m: [0.50, -0.20, 1.00]
+  half_lwh_m: [0.015, 0.12, 0.12]
+  stiffness_note: 静态墙(不可动)——接触力由 PD 阻抗产生
+
+# ── 不平地形(平衡族 ±3cm 抗扰规格 §7.1——assets.terrain 开关) ──
+terrain:
+  n_blocks: 12
+  h_range_m: [0.005, 0.03]
+  area_m: [[-1.2, 1.2], [-1.2, 1.2]]
+  half_size_m: [0.08, 0.08]

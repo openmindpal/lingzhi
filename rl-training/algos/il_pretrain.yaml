@@ -1,0 +1,8 @@
+# 模仿学习预训练(Diffusion Policy / ACT——操作族可选,引擎训练指南 §10)
+# 用途: 操作族 1~10B 步收敛加速——示教轨迹预训练 → RL 微调
+# 诚实边界: 参考后端未实现 IL 预训练;接入点 = rltrain/(数据加载器 + 预训练头),
+# 产物仍走同一导出/打包/验收流水线(契约不变)。
+algo: il-pretrain
+methods: [diffusion-policy, act]
+data: demos/            # 示教轨迹(MJCF 回放录制或真机遥操作)
+status: bc-pretrain-implemented(--pretrain-demos;diffusion/act 仍为扩展点)

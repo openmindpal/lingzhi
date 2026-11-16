@@ -1,0 +1,38 @@
+{
+  "set_name": "traffic", "version": 1,
+  "tasks": [
+    {
+      "id": "T19",
+      "goal": {"text": "指向北方车道（放行北方车流）", "structured": {"action": "reach", "target": "lane_north", "goal_x": 0.0, "goal_y": 0.35, "goal_z": 0.35, "goal_f": 0.7}},
+      "scene": "traffic", "package": "sim-arm-6dof", "skills_required": ["reach_goal"],
+      "success_criteria": [
+        {"kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop"},
+        {"kind": "joint_limits_respected", "metric": "limits+margin_violations", "bound": 0, "executor": "bridge_policy_loop"}
+      ]
+    },
+    {
+      "id": "T20",
+      "goal": {"text": "指向东方车道（放行东方车流）", "structured": {"action": "reach", "target": "lane_east", "goal_x": 0.35, "goal_y": 0.0, "goal_z": 0.35, "goal_f": 0.7}},
+      "scene": "traffic", "package": "sim-arm-6dof", "skills_required": ["reach_goal"],
+      "success_criteria": [
+        {"kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop"}
+      ]
+    },
+    {
+      "id": "T21",
+      "goal": {"text": "水平停止手势（拦停所有方向）", "structured": {"action": "reach", "target": "stop_front", "goal_x": 0.3, "goal_y": 0.0, "goal_z": 0.3, "goal_f": 0.9}},
+      "scene": "traffic", "package": "sim-arm-6dof", "skills_required": ["reach_goal"],
+      "success_criteria": [
+        {"kind": "tau_bounded", "metric": "max|tau|_N_m", "bound": 80, "executor": "bridge_policy_loop"}
+      ]
+    },
+    {
+      "id": "T22",
+      "goal": {"text": "完整指挥编排：北放行→东放行→停止，完成后汇报", "structured": {"action": "reach", "target": "lane_north"}},
+      "scene": "traffic", "package": "sim-arm-6dof", "skills_required": ["reach_goal"],
+      "success_criteria": [
+        {"kind": "acceptance_gate_pass", "metric": "traffic_orchestration", "bound": 1, "executor": "engine_in_loop"}
+      ]
+    }
+  ]
+}

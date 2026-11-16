@@ -1,0 +1,25 @@
+# 用法（与 e2e 基座合并，见 run-fullstack.sh）：
+#   docker compose -f e2e/docker-compose.e2e.yml -f simulation/docker/compose.fullstack.yaml -p mindpal-e2e up -d
+#
+# + libddsc + python 桥），HARDWARE_BACKEND=auto（真 DDS 链），entrypoint 换
+# sleep（配对/run/身体由 run-fullstack.sh 经 exec 驱动）。其余服务原样继承。
+# 端口旁路：开发栈（openslin4）占 17800/14000/19200。
+services:
+  device-agent:
+    image: mindpal-sim-verifier
+    # 主进程 = resident 守护循环（身体进程随容器存亡——exec 派生进程会随
+    # restart api 被连带终止，这是实测第八个真缺陷的根因）
+    entrypoint: ["sh", "-c", "while true; do python3 -m bridge.joint_sim_shim --resident --auto-spawn >> /tmp/resident.log 2>&1; echo resident exited, restarting >> /tmp/resident.log; sleep 2; done"]
+    environment:
+      API_BASE: http://api:3001/v1
+      MINDPAL_DATA_DIR: /data
+      HOME: /data
+      HARDWARE_BACKEND: auto
+      MINDPAL_SIM_PKG: /pkg/arm/body-package.toml
+      MINDPAL_SIM_MODEL: /build/simulation/assets/scenes/traffic.xml
+  api:
+    ports: !override ["17801:3001"]
+  mock-llm:
+    ports: !override ["14001:4000"]
+  fake-dev-executor:
+    ports: !override ["19201:9200"]

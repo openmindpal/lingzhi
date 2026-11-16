@@ -1,0 +1,16 @@
+# gait 风格实例: 奔跑速度档——balance 制式实例(腾空相出现=与走不同接触节奏)
+name: family_gait_run
+row_name: gait_run
+kind: policy
+family: balance
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 8
+action_scale: 0.40
+soft_limit_margin: 0.05
+gait:
+  target: {vx: 1.8, vy: 0.0, wz: 0.0}   # 奔跑 1.8 m/s(腾空相)
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.2, friction_jitter: 0.3}
+reward: {vel: 1.2, alive: 0.5, upright: 1.0, action_rate: 0.01, tau: 0.001}
+gate: {vel_err: 0.45, survive: 0.95}

@@ -1,0 +1,111 @@
+{
+  "set_name": "kitchen",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "T11",
+      "goal": {
+        "text": "拿起灶台上的锅",
+        "structured": {
+          "action": "reach",
+          "target": "pot",
+          "location": "stove",
+          "goal_f": 0.5
+        }
+      },
+      "scene": "kitchen",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "policy_steady_tracking",
+          "metric": "max|q_steady-act_target|",
+          "bound": 0.25,
+          "executor": "bridge_policy_loop"
+        },
+        {
+          "kind": "joint_limits_respected",
+          "metric": "limits+margin_violations",
+          "bound": 0,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T12",
+      "goal": {
+        "text": "倒油入锅",
+        "structured": {
+          "action": "reach",
+          "target": "pot",
+          "goal_f": 0.2
+        }
+      },
+      "scene": "kitchen",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "policy_steady_tracking",
+          "metric": "max|q_steady-act_target|",
+          "bound": 0.25,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T13",
+      "goal": {
+        "text": "翻炒锅内食材",
+        "structured": {
+          "action": "reach",
+          "target": "pot",
+          "goal_f": 0.7
+        }
+      },
+      "scene": "kitchen",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "tau_bounded",
+          "metric": "max|tau|_N_m",
+          "bound": 80,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T14",
+      "goal": {
+        "text": "完整炒菜编排（拿锅→倒油→翻炒→汇报）",
+        "structured": {
+          "action": "grasp",
+          "target": "pot",
+          "location": "stove"
+        }
+      },
+      "scene": "kitchen",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "grasp_pot",
+        "pour_oil",
+        "stir_fry"
+      ],
+      "success_criteria": [
+        {
+          "kind": "acceptance_gate_pass",
+          "metric": "kitchen_orchestration",
+          "bound": 1,
+          "executor": "engine_in_loop"
+        }
+      ]
+    }
+  ]
+}

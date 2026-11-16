@@ -1,0 +1,73 @@
+<mujoco model="arm_6dof">
+  <!-- 6-DOF 串接臂——仿真冒烟最小本体（packages/sim-arm-6dof 的物理背板）。
+       契约：
+         - 关节名 = 包 joint_mapping.ordered 逐一对应（桥接器启动校验）
+         - 关节限位 = 包 profile.joints.limits 同值（仿真=训练=部署同限位）
+         - 传感：framequat/gyro/accelerometer @site imu（IMU 块 10 元）
+         - timestep 0.002 = 500Hz 物理拍（技术文档 §2.3 子步对齐） -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.5" armature="0.01"/>
+    <geom rgba="0.7 0.7 0.8 1" contype="1" conaffinity="0"/>
+  </default>
+
+  <worldbody>
+    <light directional="true" pos="0 0 3" dir="0 0 -1"/>
+
+    <body name="base" pos="0 0 0">
+      <geom type="cylinder" size="0.06 0.03" rgba="0.3 0.3 0.35 1"/>
+      <body name="link1" pos="0 0 0.03">
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" range="-148.97 148.97"/>
+        <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.025"/>
+        <body name="link2" pos="0 0 0.10">
+          <joint name="shoulder_pitch" type="hinge" axis="0 1 0" range="-85.94 85.94"/>
+          <geom type="capsule" fromto="0 0 0 0 0 0.12" size="0.022"/>
+          <body name="link3" pos="0 0 0.12">
+            <joint name="elbow" type="hinge" axis="0 1 0" range="-114.59 17.19"/>
+            <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.02"/>
+            <body name="link4" pos="0 0 0.10">
+              <joint name="wrist_pitch" type="hinge" axis="0 1 0" range="-68.75 68.75"/>
+              <geom type="capsule" fromto="0 0 0 0 0 0.06" size="0.015"/>
+              <body name="link5" pos="0 0 0.06">
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" range="-85.94 85.94"/>
+                <geom type="capsule" fromto="0 0 0 0 0 0.05" size="0.015"/>
+                <body name="link6" pos="0 0 0.05">
+                  <joint name="wrist_yaw" type="hinge" axis="0 1 0" range="-68.75 68.75"/>
+                  <geom type="box" size="0.015 0.015 0.02" pos="0 0 0.02"/>
+                  <site name="tool" pos="0 0 0.05" size="0.005"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- IMU 挂点（基座——IMU 块数据源） -->
+    <site name="imu" pos="0 0 0.06" size="0.004"/>
+    <!-- 供帧相机（http_image 通路——场景感知主相机视角） -->
+    <camera name="wrist_cam" pos="0.8 -0.8 0.8" xyaxes="0.707 0.707 0 -0.408 -0.408 0.816"
+            fovy="45"/>
+
+    <!-- 桌面 + 物体（任务集引用的最小工作域） -->
+    <geom name="table" type="box" pos="0.35 0 0.35" size="0.25 0.25 0.02"
+          rgba="0.55 0.4 0.3 1" contype="1" conaffinity="1"/>
+    <body name="cup" pos="0.35 0.1 0.39">
+      <freejoint/>
+      <geom name="cup_geom" type="cylinder" size="0.03 0.05" mass="0.2"
+            rgba="0.9 0.2 0.2 1" contype="1" conaffinity="1"/>
+    </body>
+    <geom name="ground" type="plane" size="2 2 0.1" rgba="0.25 0.3 0.25 1" contype="1" conaffinity="1"/>
+  </worldbody>
+
+  <actuator>
+    <!-- IMU 传感（桥接器 IMU 块数据源——现实同款传感量白名单） -->
+  </actuator>
+
+  <sensor>
+    <framequat objtype="site" objname="imu"/>
+    <gyro site="imu"/>
+    <accelerometer site="imu"/>
+  </sensor>
+</mujoco>

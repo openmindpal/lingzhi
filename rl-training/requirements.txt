@@ -1,0 +1,9 @@
+# RL 训练平台依赖（版本 = 本地实跑全绿的快照 2026-11-14）
+# torch 由 workflow 单独以 CPU 源安装（避免拉 CUDA 巨包），此处仅列非 torch 项
+mujoco==3.17.0
+numpy==2.4.6
+onnx==1.23.2
+pyyaml==6.0.2
+pybullet==3.2.6
+onnxruntime==1.20.1
+cryptography==42.0.8

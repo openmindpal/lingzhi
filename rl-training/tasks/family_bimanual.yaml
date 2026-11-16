@@ -1,0 +1,24 @@
+# 运动模式级原语: 双手协同(双臂力耦合)——manipulation 制式实例
+# 力学结构 = 双臂耦合(左手扶稳 ∧ 右手操作——力/相位互相约束)
+# 训练方式 = goal 条件化课程(左稳力 0~1×f_force_n 连续 / 操作目标位连续 / 拧角域连续)
+#           ——一个原语覆盖无限双手场景(拧盖/端盆/系扣/递剪刀 = 同一耦合力学不同参数)
+# 观测 = contact(k=2 双腕六维——左右力耦合的物理来源)
+# goal 语义 = [操作目标x, 操作目标y, 拧角rad, 左稳力标量]
+# 稳定判据 = 瓶不倒(w>0.95)+不位移(xy<4cm)——左臂失稳 = 右臂白干
+name: family_bimanual
+row_name: bimanual_coord
+kind: policy
+family: manipulation
+obs_mode: goal_contact   # goal=[操作目标x,y,拧角,左稳力标量]——泛化口径
+priority: task
+control_hz: 50
+episode_s: 6
+action_scale: 0.3
+soft_limit_margin: 0.05
+assets: {objects: true}
+bimanual: {f_force_n: 20.0}
+goal_box: [[0.30, 0.45], [-0.30, -0.10], [1.0, 4.0]]   # x/y=操作目标, z=拧角域
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, contact_noise: 0.05}
+reward: {force: 0.05, stable: 1.0, ee_err: 0.5, action_rate: 0.02, tau: 0.001}
+gate: {stable_frac: 0.95}

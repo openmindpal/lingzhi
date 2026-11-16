@@ -1,0 +1,19 @@
+# 运动模式级原语: 高动态全身(翻跟头/跳跃)——balance 制式实例
+# 力学结构 = 腾空+爆发+落地稳定(与站立/行走不同维度);变体(前/后/侧、高低)由 goal/课程参数化——一个策略覆盖整个模式
+# 腾空语义: airborne_ok = 腾空相位不判摔(否则翻转中途被误终止);成败由 峰值高度+落地直立 判定
+name: family_athletic
+row_name: athletic_air
+kind: policy
+family: balance
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 4
+action_scale: 0.45           # 高动态需要大行程
+soft_limit_margin: 0.05
+airborne_ok: true            # 腾空不判摔——落地直立由奖励与终态判定
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.1, friction_jitter: 0.2}
+reward: {peak: 2.0, upright: 1.0, action_rate: 0.01, tau: 0.001}
+gate: {peak_z: 1.15}         # 峰值高度门槛(骨盆世界高基准 1.0)
+# 原子口径: 当前奖励 = 跳跃/腾空原语(峰值+落地直立);
+# 翻转类变体(空翻)需旋转目标参数进 goal/课程——模式内扩展项,非新原语

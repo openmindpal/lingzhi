@@ -1,0 +1,24 @@
+# 自定义任务模板——第三方任意策略接入点(通用性)
+# 复制本文件为 tasks/custom/<你的任务>.yaml,按注释填字段即可走同一流水线:
+#   train.py --task custom/<你的任务> → export_onnx → package_build → verify_in_sim
+# 契约不变式(引擎侧): obs 布局 = contracts/obs_layout.md 白名单;
+#   obs_dim ∈ {b·J+10+6k}(+4);动作 = J 维绝对关节目标(软限位内);
+#   family ∈ 四族枚举(实例名/行开放)
+name: custom_example
+row_name: custom_policy          # 派发主键(认知按名派发)
+kind: policy
+family: manipulation             # 四族取最贴近制式;开放度 = 实例名/行/词(诚实边界)
+obs_mode: base                   # base | goal | contact | goal_contact
+priority: task
+control_hz: 50
+episode_s: 4
+action_scale: 0.25
+soft_limit_margin: 0.05
+# goal 条件化任务须给 goal_box(基座系米)与 goal_f_range:
+# goal_box: [[xmin,xmax],[ymin,ymax],[zmin,zmax]]
+# goal_f_range: [0.0, 1.0]
+# 形变体任务给 morph: {joint_idx: [...], amp_rad: [...], progress: [0,1]}
+# 表达族任务给 wave_joint_idx / base_amp / wave_hz
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {alive: 0.5, posture: 0.2, action_rate: 0.02, tau: 0.001}
+gate: {survive: 0.99}

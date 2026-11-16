@@ -1,0 +1,18 @@
+# gait 风格实例: 持物行走——balance 制式实例(负重步态:重心偏移+臂持物耦合)
+# 与 family_heavy 交界: 本实例 = 中轻负荷常速行走;重物搬运 = family_heavy(全身发力链)
+name: family_gait_carry
+row_name: gait_carry
+kind: policy
+family: balance
+obs_mode: base
+priority: carry
+control_hz: 50
+episode_s: 8
+action_scale: 0.35
+soft_limit_margin: 0.05
+gait:
+  target: {vx: 0.60, vy: 0.0, wz: 0.0}   # 持物 0.60 m/s(降速)
+load: {mass_kg: [1.0, 3.0]}              # 中轻负荷(重物归 heavy)
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.2, friction_jitter: 0.3, load_jitter: 0.3}
+reward: {vel: 1.0, alive: 0.5, upright: 1.0, hold: 0.8, action_rate: 0.01, tau: 0.001}
+gate: {vel_err: 0.35, survive: 0.95, hold: 1}

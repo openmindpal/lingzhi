@@ -1,0 +1,19 @@
+# 运动模式级原语: 柔性接触·恒力擦拭——manipulation 制式实例
+# 力学结构 = 受约束表面接触(恒力贴面移动)——柔性操作的基础档
+# 观测 = contact(k=2 腕部六维);判据 = 垂直力贴目标 + 沿面覆盖位移
+# 表面 = 桌面(assets.objects 开启);柔性布已入资产(fold/叠衣为后续扩展档)
+name: family_soft
+row_name: wipe_const
+kind: policy
+family: manipulation
+obs_mode: contact
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.25
+soft_limit_margin: 0.05
+assets: {objects: true}
+wipe: {f_force_n: 8.0}          # 擦拭目标垂直力[样例]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, contact_noise: 0.05}
+reward: {force: 0.05, travel: 2.0, action_rate: 0.02, tau: 0.001}
+gate: {f_err_n: 3.0}

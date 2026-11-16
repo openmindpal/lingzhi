@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "lingzhi-sim/taskset-v1",
+  "title": "仿真任务集 schema v1（技术文档 §3.1——第三方可扩展的验证输入）",
+  "type": "object",
+  "required": ["set_name", "version", "tasks"],
+  "additionalProperties": false,
+  "properties": {
+    "set_name": { "type": "string", "minLength": 1 },
+    "version": { "const": 1 },
+    "tasks": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/task" } }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "required": ["id", "goal", "scene", "package", "success_criteria"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^T[0-9]{2,}$" },
+        "goal": {
+          "type": "object",
+          "required": ["text", "structured"],
+          "additionalProperties": false,
+          "properties": {
+            "text": { "type": "string", "minLength": 1 },
+            "structured": {
+              "type": "object",
+              "required": ["action", "target"],
+              "additionalProperties": false,
+              "properties": {
+                "action": { "enum": ["grasp", "place", "pour", "press", "hand_over", "wave", "point", "crouch", "stand", "walk_to"] },
+                "target": { "type": "string", "minLength": 1 },
+                "location": { "type": "string" },
+                "goal_f": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          }
+        },
+        "scene": { "type": "string", "minLength": 1 },
+        "package": { "type": "string", "minLength": 1 },
+        "skills_required": { "type": "array", "items": { "type": "string" } },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field", "values"],
+            "additionalProperties": false,
+            "properties": {
+              "field": { "enum": ["goal_x", "goal_y", "goal_z", "goal_f", "object_mass", "object_friction"] },
+              "values": { "type": "array", "minItems": 2, "items": { "type": "number" } }
+            }
+          }
+        },
+        "success_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/criterion" }
+        }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "required": ["kind", "metric", "bound", "executor"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "policy_steady_tracking",
+            "joint_limits_respected",
+            "tau_bounded",
+            "no_estop",
+            "tool_within",
+            "force_below",
+            "acceptance_gate_pass"
+          ]
+        },
+        "metric": { "type": "string", "minLength": 1 },
+        "bound": { "type": "number" },
+        "executor": { "enum": ["bridge_policy_loop", "engine_in_loop"] }
+      }
+    }
+  }
+}

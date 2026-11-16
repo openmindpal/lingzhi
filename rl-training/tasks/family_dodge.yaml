@@ -1,0 +1,24 @@
+# 运动模式级原语: 反应性闪避(拳击躲避)——balance 制式实例
+# 力学结构 = 感知驱动的全身快速反应;威胁方向/紧急度 = goal 块承载
+# **契约演化提案**: goal 块复用为威胁向量 [闪避方向x, 闪避方向y, 距离, 紧急度]——
+#   真机部署前须与引擎契约 §2.2 对齐(当前引擎语义 = [目标x,y,z,任务标量]);
+#   参考后端按演化语义实现,引擎对齐前仅限仿真内训练与验收。
+# 威胁 = 脚本化逼近球体(obj_threat_ball,匀速朝骨盆);接触 = 判负
+name: family_dodge
+row_name: dodge_react
+kind: policy
+family: balance
+obs_mode: goal
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.4
+soft_limit_margin: 0.05
+airborne_ok: false
+assets: {objects: true}
+dodge: {speed_ms: 0.8}
+goal_box: [[0, 1], [0, 1], [0, 2]]   # 演化语义占位——goal 块由环境按威胁向量注入
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {alive: 0.5, survive: 1.0, hit_penalty: 5.0, action_rate: 0.01, tau: 0.001}
+gate: {survive: 0.9}

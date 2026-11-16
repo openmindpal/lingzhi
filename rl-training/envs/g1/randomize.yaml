@@ -1,0 +1,13 @@
+# G1 域随机化(引用制——单一权威表不复制)
+# 单一权威 = simulation/suites/sweeps/domain_randomization.yaml(训练/验收共享)
+# 任务 yaml 的 randomize 段数值 = 权威表镜像(训练侧口径)——改权威表为准,此处仅声明引用
+authority: ../../../simulation/suites/sweeps/domain_randomization.yaml
+ranges:
+  mass_com: ±0.20
+  friction_damping: ±0.30
+  motor_delay_ms: [0, 20]
+  imu_encoder_noise: gaussian
+  contact_noise: gaussian(obs_contact 行必选)
+backend_split:
+  mujoco: [imu_noise, encoder_noise, contact_noise, mass_jitter, friction_jitter]
+  isaaclab: [全表(含电机延迟/地形/推力课程)]

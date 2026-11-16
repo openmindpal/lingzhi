@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!-- Sim2Sim 对拍 URDF——平面臂（铰轴 Z=重力轴），与 MJCF 逐参数等价 -->
+<robot name="sim2sim_pendulum">
+  <link name="world"/>
+  <joint name="j1" type="revolute">
+    <parent link="world"/><child link="link1"/>
+    <origin xyz="0 0 1.0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/><limit lower="-1.5" upper="1.5" effort="100" velocity="50"/>
+    <dynamics damping="0" friction="0"/>
+  </joint>
+  <link name="link1">
+    <inertial>
+      <mass value="2.0"/><origin xyz="0.15 0 0"/>
+      <inertia ixx="1.33e-4" iyy="0.0156" izz="0.0156" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual><geometry><box size="0.3 0.02 0.02"/></geometry><origin xyz="0.15 0 0"/></visual>
+    <collision><geometry><box size="0.3 0.02 0.02"/></geometry><origin xyz="0.15 0 0"/></collision>
+  </link>
+  <joint name="j2" type="revolute">
+    <parent link="link1"/><child link="link2"/>
+    <origin xyz="0.3 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/><limit lower="-1.5" upper="1.5" effort="100" velocity="50"/>
+    <dynamics damping="0" friction="0"/>
+  </joint>
+  <link name="link2">
+    <inertial>
+      <mass value="2.0"/><origin xyz="0.15 0 0"/>
+      <inertia ixx="1.33e-4" iyy="0.0156" izz="0.0156" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+    <visual><geometry><box size="0.3 0.02 0.02"/></geometry><origin xyz="0.15 0 0"/></visual>
+    <collision><geometry><box size="0.3 0.02 0.02"/></geometry><origin xyz="0.15 0 0"/></collision>
+  </link>
+</robot>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>灵智仿真验证平台</title>
+<style>
+  :root { --bg:#0d1117; --card:#161b22; --line:#30363d; --fg:#e6edf3; --dim:#8b949e;
+          --ok:#3fb950; --bad:#f85149; --acc:#58a6ff; --warn:#d29922; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--fg); font:14px/1.6 "Cascadia Code",Consolas,"Microsoft YaHei",monospace; padding:24px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  h2 { font-size:15px; color:var(--acc); margin:26px 0 10px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+  .sub { color:var(--dim); font-size:12px; margin-bottom:16px; }
+  .grid { display:grid; gap:12px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:14px; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th,td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
+  th { color:var(--dim); font-weight:normal; }
+  .pass { color:var(--ok); } .fail { color:var(--bad); } .dim { color:var(--dim); }
+  .chip { display:inline-block; border:1px solid var(--line); border-radius:10px; padding:0 8px; font-size:11px; margin:1px; }
+  .chip.loop { border-color:var(--acc); color:var(--acc); }
+  .chip.bridge { border-color:var(--ok); color:var(--ok); }
+  .rate { font-size:18px; font-weight:bold; }
+  .bar { height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin:4px 0; }
+  .bar>i { display:block; height:100%; background:var(--ok); }
+  canvas { background:#0a0e14; border:1px solid var(--line); border-radius:4px; width:100%; height:120px; }
+  .flow { font-size:12px; color:var(--dim); line-height:1.9; }
+  .flow b { color:var(--fg); }
+  img#cam { max-width:100%; border:1px solid var(--line); border-radius:4px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:900px){ .cols{ grid-template-columns:1fr; } }
+  .note { font-size:11px; color:var(--dim); margin-top:6px; }
+</style>
+</head>
+<body>
+<h1>灵智仿真验证平台</h1>
+<div class="sub">simulation/ · 桥接器=虚拟机器人 DDS 端点（引擎零改动）· 唯一权威=引擎代码+本体包契约 · 断言全部机械阈值</div>
+
+<h2>① 数据流（技术文档 §2 桥接器契约）</h2>
+<div class="card flow">
+  <b>引擎 PolicySlot</b>（既有 dds 制式，装载仿真包）→ 映射序绝对关节目标流
+  <b>mp/sim/*/lowcmd</b>（mindpal::JointTargets 428B CDR-LE, reliable）→
+  <b>桥接器</b> mj_step(N 子步) → 传感回流 <b>mp/sim/*/lowstate</b>
+  （mindpal::JointStates 664B CDR-LE, best_effort）→ 引擎观测装配 → 下一拍闭环<br>
+  相机：桥接器渲染线程 → GET /frame.jpg（http_image 同通路）·
+  断流：桥停供 → 引擎看门狗 → safety.stream_loss（与真机同语义）
+</div>
+
+<h2>② 套件矩阵 <span class="dim" id="runall-meta"></span></h2>
+<div class="card"><table id="suites"><thead>
+<tr><th>套件</th><th>结果</th><th>耗时</th><th>尾部输出</th></tr>
+</thead><tbody></tbody></table></div>
+
+<div class="cols">
+<h2 style="grid-column:1/3">③ goal_sweep 动作泛化扫掠</h2>
+<div id="sweeps" class="grid"></div>
+</div>
+
+<div class="cols">
+<h2 style="grid-column:1/3">④ 长跑 + 故障注入</h2>
+<div class="card" id="longevity">
+  <b>longevity（时间加速长跑）</b><div id="long-body" class="dim">…</div>
+  <canvas id="rss" width="600" height="120"></canvas>
+  <div class="note">RSS 曲线（MB）——warmup 后增长 &lt; 30MB 泄漏断言</div>
+</div>
+<div class="card" id="faults">
+  <b>fault_injection（注入信号实证）</b><div id="fault-body">…</div>
+  <div class="note" id="fault-pending"></div>
+</div>
+</div>
+
+<h2>⑤ 仿真身体（桥接器相机 live）</h2>
+<div class="card"><img id="cam" alt="桥接器相机（未运行时 503 诚实缺帧）">
+<div class="note">GET /cam → 代理 http://127.0.0.1:8284/frame.jpg —— bridge.server 运行中即出图，缺席=503（感知事实 TTL 语义同源）</div></div>
+
+<h2>⑥ 任务集 core_10（认知泛化输入——第三方可扩展）</h2>
+<div class="card"><table id="tasks"><thead>
+<tr><th>ID</th><th>任务</th><th>包</th><th>技能</th><th>判据</th></tr>
+</thead><tbody></tbody></table></div>
+
+<div class="note" style="margin-top:20px">engine_in_loop 判据（证据门/末端位置/力上限）= Linux E2E 接续面——本仪表盘只呈现 bridge_policy_loop 已实证结果，不冒充全链。</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const chip = (t, cls) => `<span class="chip ${cls||''}">${t}</span>`;
+
+async function load() {
+  const [sum, tasks] = await Promise.all([
+    fetch('/api/summary').then(r=>r.json()),
+    fetch('/api/tasks').then(r=>r.json()),
+  ]);
+
+  // ② 套件矩阵
+  const ra = sum.run_all;
+  if (ra) {
+    $('runall-meta').textContent =
+      `RUN_ALL ${ra.summary.passed}/${ra.summary.total}（wall ${ra.summary.wall_s}s · ${ra.ts}）`;
+    $('suites').tBodies[0].innerHTML = ra.suites.map(s => `<tr>
+      <td>${s.name}</td>
+      <td class="${s.pass?'pass':'fail'}">${s.pass?'PASS':'FAIL'}</td>
+      <td class="dim">${s.elapsed_s}s</td>
+      <td class="dim">${s.tail.splitlines?s.tail:s.tail}</td></tr>`).join('');
+  } else {
+    $('runall-meta').textContent = '（reports/ 无 run_all 报告——先跑 python -m runner.run_all）';
+  }
+
+  // ③ 扫掠
+  $('sweeps').innerHTML = Object.entries(sum.goal_sweeps || {}).map(([pkg, r]) => {
+    const s = r.summary;
+    const rows = r.points.map(p => `<tr>
+      <td class="dim">gx=${p.goal[0].toFixed(2)} gf=${p.goal[3]}</td>
+      <td>${p.track_err.toFixed(3)}</td><td>${p.tau_max.toFixed(0)}</td>
+      <td>${p.limit_violations}</td>
+      <td class="${p.pass?'pass':'fail'}">${p.pass?'PASS':'FAIL'}</td></tr>`).join('');
+    return `<div class="card"><b>${pkg}</b> / ${r.policy}
+      <span class="rate ${s.failed?'fail':'pass'}"> ${s.success_rate*100}%</span>
+      <div class="bar"><i style="width:${s.success_rate*100}%"></i></div>
+      <table><thead><tr><th>goal</th><th>track</th><th>τ max</th><th>viol</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }).join('') || '<div class="card dim">（无扫掠报告）</div>';
+
+  // ④ 长跑 + 故障
+  const lg = sum.longevity;
+  if (lg) {
+    $('long-body').innerHTML =
+      `hash=${lg.determinism_hash} · 拍数=${lg.ticks} · RSS ${lg.rss_curve[0][1]}→${lg.rss_curve.at(-1)[1]}MB（+${lg.rss_growth_mb.toFixed(1)}）` +
+      ` · viol=${lg.limit_violations} · τ=${lg.tau_max}N·m · wall=${lg.wall_s}s/sim=${lg.sim_s}s(speed=${lg.speed}) ` +
+      `<span class="pass">L1~L5 PASS</span>`;
+    const c = $('rss'), ctx = c.getContext('2d');
+    const pts = lg.rss_curve; const W=c.width, H=c.height;
+    const ys = pts.map(p=>p[1]); const lo=Math.min(...ys)-2, hi=Math.max(...ys)+2;
+    ctx.strokeStyle='#58a6ff'; ctx.beginPath();
+    pts.forEach((p,i)=>{ const x=10+(W-20)*i/(pts.length-1), y=H-10-(H-20)*(p[1]-lo)/(hi-lo);
+      i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.stroke();
+  } else { $('long-body').textContent = '（无长跑报告）'; }
+
+  const fi = sum.fault_injection;
+  if (fi) {
+    $('fault-body').innerHTML = fi.cases.map(c =>
+      `<div><span class="pass">✓ ${c.case}</span> <span class="dim">${c.signal}</span></div>`).join('');
+    $('fault-pending').textContent = 'engine_in_loop 待接：' + fi.engine_in_loop_pending.join(' / ');
+  } else { $('fault-body').textContent = '（无故障注入报告）'; }
+
+  // ⑥ 任务集
+  $('tasks').tBodies[0].innerHTML = tasks.tasks.map(t => `<tr>
+    <td>${t.id}</td><td>${t.goal.text}</td><td class="dim">${t.package}</td>
+    <td>${t.skills_required.map(s=>chip(s)).join('')}</td>
+    <td>${t.success_criteria.map(c=>chip(c.kind, c.executor==='engine_in_loop'?'loop':'bridge')).join('')}</td></tr>`).join('');
+}
+
+load().catch(e => document.body.insertAdjacentHTML('beforeend',
+  `<div class="fail" style="margin-top:16px">加载失败：${e}（python -m demo.serve 后访问）</div>`));
+setInterval(()=>{ $('cam').src = '/cam?t='+Date.now(); }, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# 族1 动态平衡(family=balance)——balance_hold 实例
+# 契约: obs_dim=97(纯本体感觉,goal_conditioned=false);行走/步态风格 = 多实例行
+# (每风格一行,认知按行名派发——本任务 = hold 实例;walk 风格实例复制本模板改 reward)
+name: family_balance
+row_name: balance_hold
+kind: policy
+family: balance
+obs_mode: base
+priority: task
+control_hz: 50            # 参考后端 50Hz(冒烟/单机);引擎行声明起步 100Hz,isaaclab 后端按规格
+episode_s: 6
+action_scale: 0.3
+soft_limit_margin: 0.05
+# 抗扰规格(引擎 §7.1: 100N 水平 0.5s 不摔)
+push: {n: 100, dur_s: 0.5}
+# 域随机化(数值镜像自单一权威表 simulation/suites/sweeps/domain_randomization.yaml——权威表为准)
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.2, friction_jitter: 0.3}
+reward: {alive: 0.5, upright: 1.0, posture: 0.2, action_rate: 0.02, tau: 0.001}
+# 验收门(机械断言;真机验收以 tri_01 在环为准)
+gate: {survive: 0.99}
+# 原子口径: 本实例 = 站立/抗扰;行走/步态 = 同族多实例行(待定义任务实例)

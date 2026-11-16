@@ -1,0 +1,19 @@
+# 族2 操作·目标条件化(family=manipulation)——reach_goal 实例
+# 契约: obs_dim=101(97+goal4),goal_conditioned=true;goal 域 = 基座系米 + f 归一 0~1
+name: family_reach
+row_name: reach_goal
+kind: policy
+family: manipulation
+obs_mode: goal
+priority: task
+control_hz: 50
+episode_s: 4
+action_scale: 0.25
+soft_limit_margin: 0.05
+# 课程采样域 = 右臂作业包络(基座系;[样例]——实机以标定包络为准)
+goal_box: [[0.15, 0.5], [-0.45, 0.0], [0.2, 0.7]]
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.1, friction_jitter: 0.2}
+reward: {ee_err: 1.0, progress: 5.0, action_rate: 0.02, tau: 0.001}
+# 验收门: 重复定位规格 ≤5mm(引擎 §7.2)——参考后端门槛放宽为任务级冒烟阈,实测值如实打印
+gate: {ee_err_m: 0.08}

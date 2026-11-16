@@ -1,0 +1,11 @@
+# SAC(力控类备选)
+# 诚实边界: 参考后端(mujoco)当前实现 PPO;SAC 为 isaaclab/扩展后端适配点——
+# 配置先占位,接入后同流水线(训练→导出→打包→验收)。
+algo: sac
+lr: 3e-4
+buffer_size: 1000000
+batch_size: 256
+tau: 0.005
+target_entropy: auto
+hidden: [256, 256]
+status: adapter-point

@@ -1,0 +1,89 @@
+<mujoco model="traffic_crossing">
+  <!-- 交通指挥路口——sim-arm-6dof 物理背板：车道+信号灯杆+指挥站台。
+       诚实边界：指挥手势=goal 参数化指向（认知层分解方位→goal 点）；
+       车流博弈/信号灯联控=智驾域（CARLA 线），仿真验证的是
+       感知方位→指向动作→回执的机制链。 -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.5" armature="0.01"/>
+    <geom rgba="0.7 0.7 0.8 1" contype="1" conaffinity="0"/>
+  </default>
+
+  <worldbody>
+    <light pos="0 0 3" dir="0 0 -1" directional="true" ambient="0.05 0.05 0.05" diffuse="0.15 0.15 0.15"/>
+    <light pos="0.45 0 1.2" dir="0 0 -1" directional="true" ambient="0.05 0.05 0.05" diffuse="0.15 0.15 0.15"/>
+    <geom name="ground" type="plane" size="3 3 0.1" rgba="0.2 0.2 0.22 1"
+          contype="1" conaffinity="1"/>
+
+    <body name="base" pos="0 0 0.15">
+      <geom type="cylinder" size="0.06 0.03" rgba="0.3 0.3 0.35 1"/>
+      <body name="link1" pos="0 0 0.03">
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" range="-2.6 2.6"/>
+        <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.025"/>
+        <body name="link2" pos="0 0 0.10">
+          <joint name="shoulder_pitch" type="hinge" axis="0 1 0" range="-1.5 1.5"/>
+          <geom type="capsule" fromto="0 0 0 0 0 0.12" size="0.022"/>
+          <body name="link3" pos="0 0 0.12">
+            <joint name="elbow" type="hinge" axis="0 1 0" range="-2.0 0.3"/>
+            <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.02"/>
+            <body name="link4" pos="0 0 0.10">
+              <joint name="wrist_pitch" type="hinge" axis="0 1 0" range="-1.2 1.2"/>
+              <geom type="capsule" fromto="0 0 0 0 0 0.06" size="0.015"/>
+              <body name="link5" pos="0 0 0.06">
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" range="-1.5 1.5"/>
+                <geom type="capsule" fromto="0 0 0 0 0 0.05" size="0.015"/>
+                <body name="link6" pos="0 0 0.05">
+                  <joint name="wrist_yaw" type="hinge" axis="0 1 0" range="-1.2 1.2"/>
+                  <geom type="box" size="0.015 0.015 0.02" pos="0 0 0.02"/>
+                  <site name="tool" pos="0 0 0.05" size="0.005"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <site name="imu" pos="0 0 0.21" size="0.004"/>
+    <camera name="wrist_cam" pos="0.45 0 0.9" xyaxes="0 1 0 -1 0 0"
+            fovy="60"/>
+
+    <!-- ── 交通路口实体 ── -->
+    <!-- 指挥站台（机器人站立位置——路口中央高台） -->
+    <geom name="podium" type="cylinder" pos="0 0 0.075" size="0.12 0.075"
+          rgba="0.85 0.75 0.1 1" contype="1" conaffinity="1"/>
+    <!-- 四方向车道标线（停车线） -->
+    <geom name="lane_north" type="box" pos="0 0.6 0.011" size="0.15 0.01 0.001"
+          rgba="0.9 0.9 0.9 1" contype="1" conaffinity="1"/>
+    <geom name="lane_south" type="box" pos="0 -0.6 0.011" size="0.15 0.01 0.001"
+          rgba="0.9 0.9 0.9 1" contype="1" conaffinity="1"/>
+    <geom name="lane_east" type="box" pos="0.6 0 0.011" size="0.01 0.15 0.001"
+          rgba="0.9 0.9 0.9 1" contype="1" conaffinity="1"/>
+    <geom name="lane_west" type="box" pos="-0.6 0 0.011" size="0.01 0.15 0.001"
+          rgba="0.9 0.9 0.9 1" contype="1" conaffinity="1"/>
+    <geom name="workbench" type="box" pos="0.45 0 0.2" size="0.25 0.15 0.02"
+          rgba="0.35 0.35 0.4 1" contype="1" conaffinity="1"/>
+    <body name="block_red" pos="0.4 -0.05 0.24">
+      <freejoint/>
+      <geom name="block_red_geom" type="box" size="0.02 0.02 0.02" mass="0.05"
+            rgba="0.9 0.15 0.15 1" contype="1" conaffinity="1"/>
+    </body>
+    <body name="block_green" pos="0.5 0.05 0.24">
+      <freejoint/>
+      <geom name="block_green_geom" type="box" size="0.02 0.02 0.02" mass="0.05"
+            rgba="0.15 0.8 0.2 1" contype="1" conaffinity="1"/>
+    </body>
+    <!-- 信号灯杆（视觉参照物——四方向） -->
+    <geom name="pole_north" type="cylinder" pos="0.25 0.5 0.3" size="0.015 0.3"
+          rgba="0.4 0.4 0.45 1" contype="1" conaffinity="1"/>
+    <geom name="pole_east" type="cylinder" pos="0.5 -0.25 0.3" size="0.015 0.3"
+          rgba="0.4 0.4 0.45 1" contype="1" conaffinity="1"/>
+  </worldbody>
+
+  <sensor>
+    <framequat objtype="site" objname="imu"/>
+    <gyro site="imu"/>
+    <accelerometer site="imu"/>
+  </sensor>
+</mujoco>

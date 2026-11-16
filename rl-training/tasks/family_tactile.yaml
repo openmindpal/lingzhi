@@ -1,0 +1,19 @@
+# 运动模式级原语: 触觉盲操作(不看摸着找/摸着辨材质)——manipulation 制式实例(触觉阵列)
+# ⚠️ 硬件依赖 = 指端/掌面触觉阵列(数据面声明)——阵列未装 = 本任务不可交付(诚实纪律)
+# 力学结构 = 触觉流驱动的搜索-辨识-操作闭环: 滑动接触纹理特征→目标辨识→精细操作
+# 判据 = 盲态目标辨识正确率(≥0.8) + 操作完成
+name: family_tactile
+row_name: tactile_blind
+kind: policy
+family: manipulation
+obs_mode: contact
+priority: task
+control_hz: 50
+episode_s: 8
+action_scale: 0.10
+soft_limit_margin: 0.05
+assets: {objects: true}
+tactile: {array: fingertip_16, texture_classes: 8}
+randomize: {imu_noise: 0.003, encoder_noise: 0.002, texture_set_jitter: 0.2}
+reward: {identify: 12.0, grasp_hold: 5.0, ee_err: 0.5, action_rate: 0.01, slip: -6.0}
+gate: {identify_accuracy: 0.8, task_done: 1}

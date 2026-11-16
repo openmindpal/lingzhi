@@ -1,0 +1,13 @@
+# robodojo 感知绑定验证——fullstack override（在 e2e 基座 + fullstack 之上叠加）：
+#   docker compose -f e2e/docker-compose.e2e.yml -f simulation/docker/compose.fullstack.yaml \
+#     -f simulation/docker/compose.robo.yaml -p mindpal-e2e up -d
+#
+# 差异 = resident 场景/包换 robodojo + resident 控制面/深度供数端口旁路（judge 用）。
+services:
+  device-agent:
+    ports:
+      - "8284:8284"   # 深度供数（引擎容器内 127.0.0.1 自取；宿主旁路诊断用）
+      - "8299:8299"   # resident 控制面（/variant /gt.json——矩阵 judge 用）
+    environment:
+      MINDPAL_SIM_PKG: /pkg/robodojo/body-package.toml
+      MINDPAL_SIM_MODEL: /build/simulation/assets/scenes/robodojo_table.xml

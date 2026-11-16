@@ -1,0 +1,422 @@
+signature = "MEYCIQDDFtoc6sIN45/xPLmLsu6XW9KtCFCziVVTDnfTAo57qwIhAMDnOl+drVMBt6U2LaiJVlPISliBXWtwdYRizHKMSsKz"
+# ═══════════════════════════════════════════════════════════
+# Unitree G1 本体包——全开放路线样例（宇树 unitree_sdk2 开源协议）
+#
+# ⚠️ 样例值声明：标 **[样例]** 的字段为参考值——实机部署前以宇树 G1
+#    规格书/实机标定为准更新。关节名按 unitree_sdk2 G1 公开命名约定
+#    （29 DOF：腿 6×2 + 腰 3 + 臂 7×2）。
+#
+# 已知边界（对接前必读）：
+#   1. 宇树 lowcmd 为 IDL 结构 + CRC 校验——dds_adapter 载荷编码需按
+#      LowCmd IDL 实现后方可驱动真机（结构/验签/交叉校验已过门）。
+#   2. words 数据行为样例姿态——实机标定后更新。
+# ═══════════════════════════════════════════════════════════
+
+[core]
+package_name = "unitree-g1"
+version = "0.1.0"
+word_schema_version = 1
+abi_version = 1
+runtime_min = "0.9.0"
+certified_by = "lingzhi-cert"
+
+# ── protocol：unitree_sdk2 DDS（rt/lowcmd 低层指令）─────────────
+[protocol]
+transport = "dds"
+frequency_hz = 100                    # lowcmd 标称 500Hz，控制器限 100Hz 起步
+heartbeat_ms = 100                    # lowcmd 断流 100ms 即阻尼失能——心跳须高频
+timeout_ms = 200
+
+[protocol.joint_mapping]
+ordered = [
+  # 左腿 6
+  "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+  "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+  # 右腿 6
+  "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+  "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+  # 腰 3
+  "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+  # 左臂 7
+  "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint",
+  "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+  # 右臂 7
+  "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint",
+  "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint",
+]
+
+[protocol.dds]
+domain_id = 0                         # unitree_sdk2 默认 domain
+participant_name = "mindpal-agent"
+
+[protocol.dds.actuator_topics.joint_cmd]
+topic_name = "rt/lowcmd"              # unitree_sdk2 公开低层指令 topic
+type_name = "unitree_hg::msg::dds_::LowCmd_"   # IDL 类型（载荷编码见文件头边界 1）
+reliability = "best_effort"
+history_depth = 1
+
+[protocol.dds.sensor_topics.joint_state]
+topic_name = "rt/lowstate"            # unitree_sdk2 公开低层状态 topic
+type_name = "unitree_hg::msg::dds_::LowState_"
+reliability = "best_effort"
+history_depth = 1
+
+[protocol.dds.qos]
+preset = "control"
+
+# ── profile：本体档案（G1 29 DOF；**[样例]** 限位以规格书为准）──
+[profile]
+body_height_m = 1.32                  # [样例]
+# 全身状态序 = lowstate 数组元素序（与 lowcmd/joint_mapping 同序——[样例]）
+state_order = [
+  "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+  "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+  "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+  "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+  "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+  "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint",
+  "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+  "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint",
+  "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint",
+]
+gaze_anchor = "waist_yaw_joint"       # 注视词朝向锚（G1 无头颈自由度——腰偏航）
+
+# 通道声明：映射序 腰12-14 / 左臂15-21 / 右臂22-28（0-based）
+[profile.arms.right]
+link_lengths_m = [0.10, 0.10, 0.075, 0.075]   # [样例] 肩-肘-腕1-腕2
+joint_sign = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+joint_limits = [[-2.6, 2.6], [-1.5, 1.5], [-1.0, 1.0], [-1.5, 0.0], [-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+base_offset_m = [0.0, -0.16, 0.34]
+channels = [22, 23, 24, 25, 26, 27, 28]       # 肩p/肩r/肩y/肘/腕r/腕p/腕y
+ik_pair = [0, 3]                              # 矢状面 IK 驱动对 = 肩pitch + 肘（channels 位）
+plane_channel = 1                             # 摆动平面朝向 = 肩roll（channels 位——aim/trace 先转平面）
+
+[profile.arms.left]
+link_lengths_m = [0.10, 0.10, 0.075, 0.075]
+joint_sign = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+joint_limits = [[-2.6, 2.6], [-1.5, 1.5], [-1.0, 1.0], [-1.5, 0.0], [-1.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
+base_offset_m = [0.0, 0.16, 0.34]
+channels = [15, 16, 17, 18, 19, 20, 21]
+ik_pair = [0, 3]
+plane_channel = 1
+
+[profile.arms]
+torso_channel = 12                    # waist_yaw——单臂律动的躯干反向耦合锚
+
+[profile.joints.left_hip_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.5, max = 3.0 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_hip_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.5, max = 0.5 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_hip_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_knee_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.3, max = 2.1 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_ankle_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.9, max = 0.6 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_ankle_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.4, max = 0.4 }              # [样例]
+sign = 1
+group = "left_leg"
+
+[profile.joints.right_hip_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.5, max = 3.0 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_hip_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.5, max = 0.5 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_hip_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_knee_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.3, max = 2.1 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_ankle_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.9, max = 0.6 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_ankle_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.4, max = 0.4 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.waist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }              # [样例]
+sign = 1
+group = "waist"
+
+[profile.joints.waist_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.6, max = 0.6 }
+sign = 1
+group = "waist"
+
+[profile.joints.waist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.6, max = 0.6 }
+sign = 1
+group = "waist"
+
+[profile.joints.left_shoulder_pitch_joint]
+dh = { a = 0.0, alpha = 1.5708, d = 0.0, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_shoulder_roll_joint]
+dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_shoulder_yaw_joint]
+dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_elbow_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.1, theta = 0.0 }
+limits = { min = -1.5, max = 0.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_roll_joint]
+dh = { a = 0.0, alpha = 1.5708, d = 0.075, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.075, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.right_shoulder_pitch_joint]
+dh = { a = 0.0, alpha = 1.5708, d = 0.0, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_shoulder_roll_joint]
+dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_shoulder_yaw_joint]
+dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_elbow_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.1, theta = 0.0 }
+limits = { min = -1.5, max = 0.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_roll_joint]
+dh = { a = 0.0, alpha = 1.5708, d = 0.075, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.075, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+# 振荡组（词渲染通道索引 = joint_mapping 序——rhythm 词的挥臂面）
+[[profile.groups]]
+name = "wave"
+channels_right = [22, 23, 24, 25]    # 右肩 pitch/roll/yaw + 肘
+channels_left = [15, 16, 17, 18]     # 左肩 pitch/roll/yaw + 肘
+amp_rad = [0.25, 0.2, 0.2, 0.3]      # [样例]
+hz = 1.5                              # [样例]
+
+[profile.stiffness_tiers]
+soft = 0.3
+normal = 0.7
+firm = 1.0
+
+[profile.dynamics]
+max_velocity_rad_s = 12.0            # [样例] G1 关节最大角速度规格值域内
+kp = 100.0                           # [样例] lowcmd KP 域
+ki = 0.0
+kd = 2.0                             # [样例] lowcmd KD 域
+
+[profile.timing]
+hold_timeout_s = 30
+auto_return_ms = 1200
+inject_window_ms = 10000
+
+# ── words：姿态数据行（全开放 DDS 路线 = 静态姿态必填）────────
+# ⚠️ pose_ratio 全部为 **[样例]** 值（按限位中位附近取值）——
+#    实机标定/动作设计后更新
+# ── words：操作能力接口声明（词 = 认知调用已训练策略的函数签名）────────
+# 表达动作不在词层——policies 段 expression 族策略行按名派发。
+[[words.rows]]
+name = "grasp_bottle"
+when_to_use = '抓取登记实体（示例操作词绑定——reach_goal 策略闭环）'
+[words.rows.manipulate]
+policy = "reach_goal"
+task = "grasp"
+force = "normal"
+
+[calibration]
+amplitude_scale = 1.0
+[calibration.neutral]
+left_hip_pitch_joint = 0.0
+left_hip_roll_joint = 0.0
+left_hip_yaw_joint = 0.0
+left_knee_joint = 0.0
+left_ankle_pitch_joint = 0.0
+left_ankle_roll_joint = 0.0
+right_hip_pitch_joint = 0.0
+right_hip_roll_joint = 0.0
+right_hip_yaw_joint = 0.0
+right_knee_joint = 0.0
+right_ankle_pitch_joint = 0.0
+right_ankle_roll_joint = 0.0
+waist_yaw_joint = 0.0
+waist_roll_joint = 0.0
+waist_pitch_joint = 0.0
+left_shoulder_pitch_joint = 0.0
+left_shoulder_roll_joint = 0.0
+left_shoulder_yaw_joint = 0.0
+left_elbow_joint = -0.75               # 限位 [-1.5,0] 软域中点——中立位必须在软限位内（装载校验）
+left_wrist_roll_joint = 0.0
+left_wrist_pitch_joint = 0.0
+left_wrist_yaw_joint = 0.0
+right_shoulder_pitch_joint = 0.0
+right_shoulder_roll_joint = 0.0
+right_shoulder_yaw_joint = 0.0
+right_elbow_joint = -0.75              # 同上
+right_wrist_roll_joint = 0.0
+right_wrist_pitch_joint = 0.0
+right_wrist_yaw_joint = 0.0
+
+# ── acquisition：G1 头部相机（标准 UVC——[样例] 设备节点实测后填）─
+[[acquisition.cameras]]
+kind = "builtin_v4l2"
+device = "/dev/video0"
+depth = false
+intrinsics = { fx = 800.0, fy = 800.0, cx = 640.0, cy = 360.0 }
+
+# ── 传感与数据面（对照规范 §2.5——[样例] 占位,字段级格式随合作交付）──
+# 已声明: joint_state(rt/lowstate)——q/dq/tau + IMU 快照来源 ✓
+# 待声明(选配硬件到位后): 腕部六维力×2 的接触力数据面
+#   ——reach_contact 行(obs_contact=true, k=2: 0=左腕 1=右腕)要求
+#   数据面声明路数 k=2 与之一致;无传感 = 该行不可交付(诚实缺帧)
+# 音频(麦克风/扬声器): 语音交互选配,acquisition 扩展段声明
+
+# ── policies：四族策略交付清单 ─────────────────────────────────
+# 契约规格（观测布局/动作语义/ONNX IO/时序/校验）唯一权威：
+#   《四族策略技术需求与训练指南》（随合作交付）
+# 装载校验：family ∈ {balance,manipulation,deform,expression}；obs_dim ∈ 合法宽度集
+# （J=29、motor_fields 未声明 → b=3：基础 97 / +goal 101 / +contact 109）
+# 权重文件由厂商交付至包内 policies/ 目录——派发时装载，缺失 = 诚实报错。
+[[policies.rows]]
+name = "balance_hold"
+family = "balance"
+weights = "policies/balance.onnx"
+frequency_hz = 100.0                  # 与 [protocol] frequency_hz 同步——起步 100Hz
+priority = "task"
+obs_dim = 97                          # 3×29 + imu(10)
+
+[[policies.rows]]
+name = "reach_goal"
+family = "manipulation"
+weights = "policies/reach.onnx"
+frequency_hz = 100.0
+priority = "task"
+obs_dim = 101                         # 97 + goal(4)
+goal_conditioned = true
+
+[[policies.rows]]
+name = "reach_contact"
+family = "manipulation"
+weights = "policies/reach_contact.onnx"
+frequency_hz = 100.0
+priority = "task"
+obs_dim = 109                         # 97 + contact(12,k=2:0=左腕 1=右腕——路序包文档化)
+obs_contact = true
+
+[[policies.rows]]
+name = "deform_ramp"
+family = "deform"
+weights = "policies/deform.onnx"
+frequency_hz = 100.0
+priority = "task"
+obs_dim = 97
+
+# ── fastbrains：快脑槽（战术层实例——引擎内零快脑逻辑）────────
+# 装载校验：kind ∈ {onnx}；goal_stream 交叉校验须对应 policies.rows；
+# 权重输入 = 肌肉同源观测展平(3×29+10=97) + 当前 goal(4)，输出 = goal(4)
+[[policies.rows]]
+name = "greet_wave"
+family = "expression"
+weights = "policies/greet_wave.onnx"
+frequency_hz = 100.0
+priority = "task"
+obs_dim = 97
+
+[[fastbrains.rows]]
+name = "tactician"
+kind = "onnx"
+weights = "fastbrains/tactician.onnx"
+outputs = { goal_stream = "reach_goal" }
+when_to_use = 'reach_goal 策略的战术层——按 q0 反馈持续微调 goal_x(闭环演示脑)'
+rate_hz = 50.0
+budget_ms = 60000

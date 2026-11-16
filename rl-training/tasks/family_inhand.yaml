@@ -1,0 +1,22 @@
+# 运动模式级原语: 手内精细(指尖级操作)——manipulation 制式实例(手包 J=45)
+# 力学结构 = 指尖级动力学(持握不落 + 绕竖直轴旋转累计——转笔/转棒代理)
+# 训练方式 = goal 条件化课程(转角目标 3~9 rad 连续 + 指尖力/物形采样)——一个原语覆盖无限手内场景
+# 观测 = contact(指尖/手部接触——指尖级力精细 = 数据面扩展提案,真机前对齐)
+# 判据 = 旋转累计 ≥ 转角目标 + 全程持握(未坠落+有接触)
+name: family_inhand
+row_name: inhand_spin
+kind: policy
+family: manipulation
+obs_mode: goal_contact   # goal=[转角目标,节律,0,0]——泛化口径
+priority: task
+control_hz: 50
+episode_s: 6
+action_scale: 0.25
+soft_limit_margin: 0.05
+assets: {hands: true, objects: true}
+inhand: {drop_z: 0.9, rot_target_rad: 6.0}
+goal_box: [[3.0, 9.0], [0.0, 1.0], [0.0, 1.0]]   # x=转角目标 rad, y=节律[样例]
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, contact_noise: 0.05}
+reward: {rot: 1.5, held: 0.8, action_rate: 0.02, tau: 0.001}
+gate: {rot_rad: 5.0}

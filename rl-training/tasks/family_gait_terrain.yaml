@@ -1,0 +1,21 @@
+# gait 风格实例: 不平地形行走——balance 制式实例(地形课程:坡/碎石/台阶域随机化)
+# 地形课程由 mjcf_gen 参数化地形(产线现成能力)——本实例 = 地形域课程训练
+name: family_gait_terrain
+row_name: gait_terrain
+kind: policy
+family: balance
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 8
+action_scale: 0.35
+soft_limit_margin: 0.05
+gait:
+  target: {vx: 0.50, vy: 0.0, wz: 0.0}
+terrain:
+  kinds: [slope, gravel, step]           # 地形课程域(mjcf_gen 生成)
+  slope_deg: [0.0, 12.0]
+  step_h_m: [0.0, 0.10]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.2, friction_jitter: 0.3, terrain_jitter: 0.4}
+reward: {vel: 1.0, alive: 0.6, upright: 1.2, action_rate: 0.01, tau: 0.001}
+gate: {vel_err: 0.40, survive: 0.90}

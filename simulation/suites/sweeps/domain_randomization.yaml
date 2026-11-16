@@ -1,0 +1,19 @@
+# 域随机化单一权威——training/（Isaac Lab）与 suites/sweeps/ 共同引用，禁止复制
+version: 1
+
+mass_rel: 0.20              # 质量/质心 ±20%
+friction_rel: 0.30          # 摩擦/阻尼 ±30%
+motor_delay_ms: { min: 0, max: 20 }
+imu_noise:
+  kind: gaussian
+  gyro_sigma_rad_s: 0.05
+  accel_sigma_m_s2: 0.5
+encoder_noise_rad: 0.01
+kp_kd_rel: 0.10             # 增益失配 ±10%（PD 伺服域——桥接器物理侧）
+
+# goal 块作业域包络（§10：课程采样覆盖）——按包 profile 覆盖/收窄
+goal_domain:
+  x: [0.0, 0.9]
+  y: [-0.3, 0.3]
+  z: [0.0, 0.8]
+  f: [0.0, 1.0]

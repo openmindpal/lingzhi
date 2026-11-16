@@ -1,0 +1,84 @@
+<mujoco model="factory_station">
+  <!-- 工厂工作站——sim-arm-6dof 物理背板：传送带+料架+工件+桌面。
+       契约：关节名/序 = 包 state_order（6 DOF 臂沿 X 前伸作业）。
+       诚实边界：搬运物理真实性 = 真机数据训练域——仿真验证机制链。 -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.5" armature="0.01"/>
+    <geom rgba="0.7 0.7 0.8 1" contype="1" conaffinity="0"/>
+  </default>
+
+  <worldbody>
+    <light directional="true" pos="0 0 3" dir="0 0 -1"/>
+    <geom name="ground" type="plane" size="2 2 0.1" rgba="0.3 0.3 0.3 1"
+          contype="1" conaffinity="1"/>
+
+    <body name="base" pos="0 0 0">
+      <geom type="cylinder" size="0.06 0.03" rgba="0.3 0.3 0.35 1"/>
+      <body name="link1" pos="0 0 0.03">
+        <joint name="shoulder_pan" type="hinge" axis="0 0 1" range="-2.6 2.6"/>
+        <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.025"/>
+        <body name="link2" pos="0 0 0.10">
+          <joint name="shoulder_pitch" type="hinge" axis="0 1 0" range="-1.5 1.5"/>
+          <geom type="capsule" fromto="0 0 0 0 0 0.12" size="0.022"/>
+          <body name="link3" pos="0 0 0.12">
+            <joint name="elbow" type="hinge" axis="0 1 0" range="-2.0 0.3"/>
+            <geom type="capsule" fromto="0 0 0 0 0 0.10" size="0.02"/>
+            <body name="link4" pos="0 0 0.10">
+              <joint name="wrist_pitch" type="hinge" axis="0 1 0" range="-1.2 1.2"/>
+              <geom type="capsule" fromto="0 0 0 0 0 0.06" size="0.015"/>
+              <body name="link5" pos="0 0 0.06">
+                <joint name="wrist_roll" type="hinge" axis="0 0 1" range="-1.5 1.5"/>
+                <geom type="capsule" fromto="0 0 0 0 0 0.05" size="0.015"/>
+                <body name="link6" pos="0 0 0.05">
+                  <joint name="wrist_yaw" type="hinge" axis="0 1 0" range="-1.2 1.2"/>
+                  <geom type="box" size="0.015 0.015 0.02" pos="0 0 0.02"/>
+                  <site name="tool" pos="0 0 0.05" size="0.005"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <site name="imu" pos="0 0 0.06" size="0.004"/>
+    <camera name="wrist_cam" pos="0.8 -0.8 0.8" xyaxes="0.707 0.707 0 -0.408 -0.408 0.816"
+            fovy="45"/>
+
+    <!-- ── 工厂工作站实体 ── -->
+    <!-- 工作台 -->
+    <geom name="workbench" type="box" pos="0.4 0 0.35" size="0.35 0.25 0.02"
+          rgba="0.5 0.5 0.55 1" contype="1" conaffinity="1"/>
+    <!-- 传送带（长条——工件从左向右流动） -->
+    <geom name="conveyor" type="box" pos="0.4 -0.15 0.38" size="0.25 0.06 0.015"
+          rgba="0.3 0.3 0.3 1" contype="1" conaffinity="1"/>
+    <!-- 料架（放置区——右端） -->
+    <geom name="bin" type="box" pos="0.55 0.15 0.38" size="0.08 0.08 0.03"
+          rgba="0.6 0.5 0.2 1" contype="1" conaffinity="1"/>
+    <!-- 待抓工件（传送带上） -->
+    <body name="part1" pos="0.3 -0.15 0.41">
+      <freejoint/>
+      <geom name="part1_geom" type="cylinder" size="0.02 0.015" mass="0.08"
+            rgba="0.9 0.7 0.1 1" contype="1" conaffinity="1"/>
+    </body>
+    <body name="part2" pos="0.4 -0.15 0.41">
+      <freejoint/>
+      <geom name="part2_geom" type="cylinder" size="0.02 0.015" mass="0.08"
+            rgba="0.9 0.7 0.1 1" contype="1" conaffinity="1"/>
+    </body>
+    <!-- 料架上的已完成件 -->
+    <body name="done_part" pos="0.55 0.15 0.43">
+      <freejoint/>
+      <geom name="done_geom" type="cylinder" size="0.02 0.015" mass="0.08"
+            rgba="0.1 0.7 0.3 1" contype="1" conaffinity="1"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framequat objtype="site" objname="imu"/>
+    <gyro site="imu"/>
+    <accelerometer site="imu"/>
+  </sensor>
+</mujoco>

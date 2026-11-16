@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+runs/
+tests/.tmp/
+envs/g1/assets/gen/
+envs/g1/assets/g1_train_free.xml
+envs/g1/assets/g1_pb.urdf
+MUJOCO_LOG.TXT

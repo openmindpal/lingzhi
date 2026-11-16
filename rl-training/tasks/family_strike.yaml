@@ -1,0 +1,21 @@
+# 运动模式级原语: 冲击击打——manipulation 制式实例
+# 力学结构 = 冲击瞬态: 高速挥摆 + 毫秒级冲量交换(与 reach_contact 的持续力完全不同)
+# goal = 目标球位(认知给);判据 = 受击球速(冲量代理 p≈m·Δv)+ 接触事件
+# 训练方式 = goal 条件化课程(挥速/击点/目标位连续采样)
+name: family_strike
+row_name: strike_hit
+kind: policy
+family: manipulation
+obs_mode: goal
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.5            # 击打需要大行程高速挥摆
+soft_limit_margin: 0.05
+assets: {objects: true}
+strike: {ball_speed_gate: 1.0}
+goal_box: [[0.36, 0.48], [-0.10, -0.02], [0.20, 0.26]]   # 目标球位(基座系)
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {strike: 2.0, contact: 0.5, ee_err: 0.3, action_rate: 0.01, tau: 0.001}
+gate: {ball_speed: 1.0}      # 受击球速 ≥1 m/s

@@ -1,0 +1,5 @@
+mujoco>=3.2
+numpy>=1.26
+cyclonedds>=0.10
+onnx>=1.16
+pillow>=10.0

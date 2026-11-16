@@ -1,0 +1,26 @@
+# 运动模式级原语: 拦截同步(时间同步到达)——manipulation 制式实例
+# 力学结构 = 时间同步到达: 手必须在目标球穿越拦截平面的同一时刻到达同一点
+#   ——位置对没用,**时刻必须对**(reach_goal 是"到位并保持",没有时间约束维)
+# **契约演化提案**: goal 块复用为拦截语义 [球x, 球y, 剩余时间归一, 0]——真机前与引擎 §2.2 对齐
+# 训练方式 = goal 条件化课程(下落高度/速度/拦截点连续采样)——一个原语覆盖无限拦截场景
+# 感知: 球轨迹预测(物理常识=自由落体,LLM/快脑承载)+ 视觉伺服帧级修正
+name: family_intercept
+row_name: intercept_sync
+kind: policy
+family: manipulation
+obs_mode: goal
+priority: task
+control_hz: 50
+episode_s: 6
+action_scale: 0.4            # 快反应需要大行程
+soft_limit_margin: 0.05
+assets: {objects: true}
+intercept:
+  plane_z: 1.15              # 拦截平面高度(手需在此平面准时到达)
+  speed_ms: 0.3              # 球匀速下降速度[样例]
+  r_m: 0.05
+goal_box: [[0.25, 0.40], [-0.45, -0.25], [1.05, 1.25]]   # 拦截点域(基座系)
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {chase: 1.0, timing: 3.0, action_rate: 0.02, tau: 0.001}
+gate: {timing_err_s: 0.15}   # 到达时刻误差 ≤150ms

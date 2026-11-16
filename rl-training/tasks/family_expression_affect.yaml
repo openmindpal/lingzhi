@@ -1,0 +1,23 @@
+# 运动模式级原语: 情感条件化表达(情绪的力学质感)——expression 制式实例(演化扩展)
+# 力学结构 = arousal/valence 情感二维连续条件化: 同一语义词(挥手)在不同情感象限下
+#   呈现不同力学风格(张力分布/节律结构/幅度包络)——**非参数缩放**(力学风格差异由训练逼出,
+#   对照: intensity 参数缩放只改幅度不改质感)
+# goal 映射(4 槽契约): gx=arousal(-1~1 觉醒度——平静↔兴奋) gy=valence(-1~1 效价——消极↔积极)
+#   gz=空间目标可选 f=表达强度(0~1)
+# 判据 = 情感象限分类正确率(力学风格可分——人类评审/分类器) + 动作自然度(jerk 指标)
+# 认知侧使用: LLM 按情境语义自行选情感参数(预训练常识)——词表只声明能力,不做情感硬编码
+name: family_expression_affect
+row_name: expression_affect
+kind: policy
+family: expression
+obs_mode: goal
+priority: expression
+control_hz: 50
+episode_s: 6
+action_scale: 0.30
+soft_limit_margin: 0.05
+goal_box: [[-1.0, 1.0], [-1.0, 1.0], [0.0, 1.0]]   # arousal / valence / 空间目标可选
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {style_match: 15.0, naturalness: 3.0, action_rate: 0.02, tau: 0.001}
+gate: {style_classify_accuracy: 0.75, naturalness_score: 0.7}

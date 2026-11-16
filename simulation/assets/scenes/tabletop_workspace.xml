@@ -1,0 +1,5 @@
+<mujoco model="tabletop_workspace">
+       场景 = include 本体模型 + 环境（光照/围栏/多物体）；
+       本体模型本体不改——场景只包它。 -->
+  <include file="../models/arm_6dof.xml"/>
+</mujoco>

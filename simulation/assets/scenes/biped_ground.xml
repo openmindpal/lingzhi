@@ -1,0 +1,4 @@
+<mujoco model="biped_ground">
+  <!-- 双足地面场景——biped_29dof + 地面域（场景=include 本体+环境；本体模型不改） -->
+  <include file="../models/biped_29dof.xml"/>
+</mujoco>

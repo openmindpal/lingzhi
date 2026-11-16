@@ -1,0 +1,20 @@
+<mujoco model="sim2sim_pendulum">
+  <!-- Sim2Sim 对拍模型——平面臂（铰轴 Z = 重力轴：重力对关节零力矩）。
+       双引擎逐参数等价：显式 inertial 同值 / 无阻尼 / 无 armature / 步长 0.0005 /
+       同一 PD 律（kp=20 kd=4，2kHz 力矩直注）。
+       断言：500 控制拍闭环轨迹 max|q_mj − q_pb| < 5°（技术文档 §4.2） -->
+  <option timestep="0.0005" gravity="0 0 -9.81" integrator="Euler"/>
+  <default><joint damping="0"/></default>
+  <worldbody>
+    <body name="link1" pos="0 0 1.0">
+      <joint name="j1" type="hinge" axis="0 0 1" range="-1.5 1.5"/>
+      <inertial pos="0.15 0 0" mass="2.0" diaginertia="1.33e-4 0.0156 0.0156"/>
+      <geom type="box" size="0.15 0.01 0.01" rgba="0.7 0.7 0.8 1" contype="0" conaffinity="0"/>
+      <body name="link2" pos="0.3 0 0">
+        <joint name="j2" type="hinge" axis="0 0 1" range="-1.5 1.5"/>
+        <inertial pos="0.15 0 0" mass="2.0" diaginertia="1.33e-4 0.0156 0.0156"/>
+        <geom type="box" size="0.15 0.01 0.01" rgba="0.7 0.7 0.8 1" contype="0" conaffinity="0"/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

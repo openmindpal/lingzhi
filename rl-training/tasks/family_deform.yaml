@@ -1,0 +1,20 @@
+# 族3 形变体(family=deform)——形态转移实例
+# 契约: obs_dim=97;输出形态转移的全身绝对目标流;形态库按实例行拆分(蹲/跪/弯/仰/转/趴)
+# 参考输出形态: act = q + Δ(权重 q 块单位阵+偏置——此处 PPO 直接学绝对目标,语义等价)
+# 验收判据(引擎 §7.3/tri_03): 20ms 采样相邻跳变 <0.05rad,转移全程平衡,保持 30s 无漂移
+name: family_deform
+row_name: deform_ramp
+kind: policy
+family: deform
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.25
+soft_limit_margin: 0.05
+# 形态目标 = 蹲(髋 pitch + 膝)——关节索引 = joint_mapping.ordered 序(0=左髋p,3=左膝,6=右髋p,9=右膝)
+morph: {joint_idx: [0, 3, 6, 9], amp_rad: [1.0, 1.2, 1.0, 1.2], progress: [0.0, 1.0]}
+# 原子口径: 本实例 = 蹲;跪/弯腰/后仰/转身 = 同族多实例行(形态库)——非新原语
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.2, friction_jitter: 0.3}
+reward: {morph: 1.0, hold: 0.2, action_rate: 0.02, tau: 0.001}
+gate: {max_step_rad: 0.05}

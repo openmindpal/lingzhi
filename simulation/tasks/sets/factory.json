@@ -1,0 +1,112 @@
+{
+  "set_name": "factory",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "T15",
+      "goal": {
+        "text": "从传送带抓取工件",
+        "structured": {
+          "action": "reach",
+          "target": "part1",
+          "location": "conveyor",
+          "goal_f": 0.5
+        }
+      },
+      "scene": "factory",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "policy_steady_tracking",
+          "metric": "max|q_steady-act_target|",
+          "bound": 0.25,
+          "executor": "bridge_policy_loop"
+        },
+        {
+          "kind": "joint_limits_respected",
+          "metric": "limits+margin_violations",
+          "bound": 0,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T16",
+      "goal": {
+        "text": "将工件放入料架",
+        "structured": {
+          "action": "reach",
+          "target": "part1",
+          "location": "bin",
+          "goal_f": 0.5
+        }
+      },
+      "scene": "factory",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "policy_steady_tracking",
+          "metric": "max|q_steady-act_target|",
+          "bound": 0.25,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T17",
+      "goal": {
+        "text": "悬停检查工件质量",
+        "structured": {
+          "action": "reach",
+          "target": "part1",
+          "goal_f": 0.3
+        }
+      },
+      "scene": "factory",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "reach_goal"
+      ],
+      "success_criteria": [
+        {
+          "kind": "tau_bounded",
+          "metric": "max|tau|_N_m",
+          "bound": 80,
+          "executor": "bridge_policy_loop"
+        }
+      ]
+    },
+    {
+      "id": "T18",
+      "goal": {
+        "text": "工厂编排：抓取→检查→放置，完成后汇报",
+        "structured": {
+          "action": "grasp",
+          "target": "part1",
+          "location": "conveyor"
+        }
+      },
+      "scene": "factory",
+      "package": "sim-arm-6dof",
+      "skills_required": [
+        "pick_part",
+        "inspect_part",
+        "place_part"
+      ],
+      "success_criteria": [
+        {
+          "kind": "acceptance_gate_pass",
+          "metric": "factory_orchestration",
+          "bound": 1,
+          "executor": "engine_in_loop"
+        }
+      ]
+    }
+  ]
+}

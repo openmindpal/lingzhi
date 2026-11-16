@@ -1,0 +1,25 @@
+# 族2c 操作·抓取(family=manipulation)——grasp_can 实例(五指灵巧手包,J=45)
+# 契约: J = 29(基座) + 2×8(五指[样例]: 拇指2+食指2+中指2+无名指1+小指1) = 45
+#       obs_dim = 3·45+10+contact(12)+goal(4) = 161(契约公式自动适配)
+# 手型选型后 body_spec.yaml hands 段回填(段链/命名/限位)——J 随之自动适配
+# assets: hands+objects(参数化生成器叠加项——spec = envs/g1/body_spec.yaml,[样例]回填)
+# 奖酬: 抓住(接触)+ 提起(物高)——手指动作 scale 独立(spec.hand.action_scale_rad)
+name: family_grasp
+row_name: grasp_lift
+kind: policy
+family: manipulation
+obs_mode: goal_contact
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.25
+soft_limit_margin: 0.05
+assets: {hands: true, objects: true, press_wall: false}
+grasp: {object: can}
+goal_box: [[0.30, 0.46], [-0.35, -0.15], [0.15, 0.30]]   # 基座系(罐位附近)
+goal_f_range: [0.0, 1.0]
+# 原子口径: 原语 = "提升目标实体"(goal=目标位姿,奖励=目标高度增益)——
+# 参考环境用罐承载;任意刚体(杯/瓶/盒)同力学同原语,换 asset 即泛化
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, contact_noise: 0.05, mass_jitter: 0.1}
+reward: {ee_err: 0.5, progress: 2.0, lift: 10.0, grasp: 0.5, action_rate: 0.02, tau: 0.001}
+gate: {lift_m: 0.02}

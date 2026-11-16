@@ -1,0 +1,20 @@
+# 运动模式级原语: 超高精度稳态(穿针)——manipulation 制式实例
+# 力学结构 = 亚厘米对准+无碰撞插入(3mm 缝——针径 1.6mm,余量 1.4mm)
+# 针装右腕(随手动);孔板固定;goal = 孔位(认知给);判据 = 插入深度
+name: family_needle
+row_name: needle_insert
+kind: policy
+family: manipulation
+obs_mode: goal
+priority: task
+control_hz: 50
+episode_s: 6
+action_scale: 0.15           # 精细档——小行程高分辨率
+soft_limit_margin: 0.05
+assets: {objects: true}
+needle: {hole_gap_m: 0.003}
+goal_box: [[0.38, 0.42], [-0.32, -0.28], [0.20, 0.26]]   # 孔位(基座系,板位附近)
+goal_f_range: [0.0, 1.0]
+randomize: {imu_noise: 0.003, encoder_noise: 0.002}
+reward: {depth: 20.0, ee_err: 0.5, progress: 2.0, action_rate: 0.01, tau: 0.001}
+gate: {insert_depth_m: 0.015}

@@ -1,0 +1,115 @@
+{
+  "set_name": "core_10",
+  "version": 1,
+  "tasks": [
+    {
+      "id": "T01",
+      "goal": { "text": "拿起桌上的水杯", "structured": { "action": "grasp", "target": "cup", "location": "table", "goal_f": 0.5 } },
+      "scene": "tabletop_workspace",
+      "package": "sim-arm-6dof",
+      "skills_required": ["reach_goal"],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" },
+        { "kind": "joint_limits_respected", "metric": "limits+margin_violations", "bound": 0, "executor": "bridge_policy_loop" },
+        { "kind": "tau_bounded", "metric": "max|tau|_N_m", "bound": 80, "executor": "bridge_policy_loop" }
+      ]
+    },
+    {
+      "id": "T02",
+      "goal": { "text": "轻拿桌上的水杯", "structured": { "action": "grasp", "target": "cup", "location": "table", "goal_f": 0.2 } },
+      "scene": "tabletop_workspace",
+      "package": "sim-arm-6dof",
+      "skills_required": ["reach_goal"],
+      "variants": [ { "field": "goal_f", "values": [0.1, 0.2, 0.3] } ],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" }
+      ]
+    },
+    {
+      "id": "T03",
+      "goal": { "text": "伸向桌面远端目标", "structured": { "action": "grasp", "target": "far_point", "location": "table_far", "goal_f": 0.8 } },
+      "scene": "tabletop_workspace",
+      "package": "sim-arm-6dof",
+      "skills_required": ["reach_goal"],
+      "variants": [ { "field": "goal_x", "values": [0.1, 0.3, 0.5, 0.7, 0.9] } ],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" },
+        { "kind": "joint_limits_respected", "metric": "limits+margin_violations", "bound": 0, "executor": "bridge_policy_loop" }
+      ]
+    },
+    {
+      "id": "T04",
+      "goal": { "text": "向登记实体挥手致意", "structured": { "action": "wave", "target": "person" } },
+      "scene": "biped_ground",
+      "package": "sim-biped-29dof",
+      "skills_required": ["greet_wave"],
+      "success_criteria": [
+        { "kind": "acceptance_gate_pass", "metric": "expression_evidence", "bound": 1, "executor": "engine_in_loop" }
+      ]
+    },
+    {
+      "id": "T05",
+      "goal": { "text": "蹲下捡起地面物体", "structured": { "action": "crouch", "target": "object", "location": "floor" } },
+      "scene": "biped_ground",
+      "package": "sim-biped-29dof",
+      "skills_required": ["deform_ramp", "reach_goal"],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" },
+        { "kind": "acceptance_gate_pass", "metric": "crouch_evidence", "bound": 1, "executor": "engine_in_loop" }
+      ]
+    },
+    {
+      "id": "T06",
+      "goal": { "text": "伸手指出登记实体方向", "structured": { "action": "point", "target": "cup" } },
+      "scene": "biped_ground",
+      "package": "sim-biped-29dof",
+      "skills_required": ["reach_goal"],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" }
+      ]
+    },
+    {
+      "id": "T07",
+      "goal": { "text": "双手递接物品给用户", "structured": { "action": "hand_over", "target": "cup", "location": "user" } },
+      "scene": "biped_ground",
+      "package": "sim-biped-29dof",
+      "skills_required": ["reach_goal", "tactician"],
+      "success_criteria": [
+        { "kind": "tool_within", "metric": "tool_position_error_m", "bound": 0.05, "executor": "engine_in_loop" },
+        { "kind": "force_below", "metric": "contact_force_n", "bound": 50, "executor": "engine_in_loop" }
+      ]
+    },
+    {
+      "id": "T08",
+      "goal": { "text": "按压登记按键（力度档 firm）", "structured": { "action": "press", "target": "button", "goal_f": 0.9 } },
+      "scene": "tabletop_workspace",
+      "package": "sim-arm-6dof",
+      "skills_required": ["reach_goal"],
+      "success_criteria": [
+        { "kind": "policy_steady_tracking", "metric": "max|q_steady-act_target|", "bound": 0.25, "executor": "bridge_policy_loop" },
+        { "kind": "force_below", "metric": "contact_force_n", "bound": 50, "executor": "engine_in_loop" }
+      ]
+    },
+    {
+      "id": "T09",
+      "goal": { "text": "把水杯放到桌面指定位置", "structured": { "action": "place", "target": "cup", "location": "table_slot_b" } },
+      "scene": "tabletop_workspace",
+      "package": "sim-arm-6dof",
+      "skills_required": ["reach_goal"],
+      "variants": [ { "field": "goal_y", "values": [-0.1, 0.0, 0.1] } ],
+      "success_criteria": [
+        { "kind": "tool_within", "metric": "tool_position_error_m", "bound": 0.05, "executor": "engine_in_loop" }
+      ]
+    },
+    {
+      "id": "T10",
+      "goal": { "text": "走到桌边拿起水杯递给用户（多步长任务）", "structured": { "action": "walk_to", "target": "cup", "location": "table", "goal_f": 0.5 } },
+      "scene": "biped_ground",
+      "package": "sim-biped-29dof",
+      "skills_required": ["balance_hold", "reach_goal", "tactician"],
+      "success_criteria": [
+        { "kind": "acceptance_gate_pass", "metric": "plan_all_nodes", "bound": 1, "executor": "engine_in_loop" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+# 族4 表达(family=expression)——greet_wave 实例
+# 契约: obs_dim=97;词汇开放(本体包自定义);风格强度可经 goal 标量条件化(可选演化)
+# 参考实现: 挥手通道节律目标(振幅随风格标量缩放)——自然度由训练承载
+name: family_expression
+row_name: greet_wave
+kind: policy
+family: expression
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 5
+action_scale: 0.2
+soft_limit_margin: 0.05
+# 挥手通道(索引 = joint_mapping 序: 22=右肩p 23=右肩r 24=右肩y 25=右肘)
+wave_joint_idx: [22, 23, 24, 25]
+base_amp: 0.25
+wave_hz: 1.5
+randomize: {imu_noise: 0.005, encoder_noise: 0.003}
+reward: {style: 1.0, action_rate: 0.02, tau: 0.001}
+gate: {style_err_rad: 0.1}
+# 原子口径: 本实例 = 固定风格挥手;风格/强度 goal 标量条件化 = 可选扩展(同一原语参数化)

@@ -1,0 +1,21 @@
+# 运动模式级原语: 织物精细操作(揉搓/系结/叠整)——manipulation 制式实例(contact)
+# 力学结构 = 高自由度可变形体的抓取点序列控制: 抓哪个特征点→拉向哪→张力多大
+#   织物 = 粒子-质簧代理(形变动力学真洒);操作 = 抓取点序列(认知给序列,策略执行每段拉整)
+# 判据 = 目标形态匹配(叠平/结成/覆盖位) + 全程不撕裂
+name: family_fabric
+row_name: fabric_fold
+kind: policy
+family: manipulation
+obs_mode: goal_contact
+priority: task
+control_hz: 50
+episode_s: 8
+action_scale: 0.15
+soft_limit_margin: 0.05
+assets: {objects: true, cloth: true}
+cloth: {particles: 64, stiffness: [0.3, 0.8]}
+goal_box: [[0.25, 0.45], [-0.30, 0.30], [0.10, 0.35]]   # 抓取点域(织物特征点,基座系)
+goal_f_range: [0.0, 1.0]                                 # 张力档连续
+randomize: {imu_noise: 0.003, encoder_noise: 0.002, cloth_stiffness_jitter: 0.3}
+reward: {shape_match: 18.0, grasp_seq: 3.0, ee_err: 0.5, action_rate: 0.01, tear: -8.0}
+gate: {shape_match_ratio: 0.85}

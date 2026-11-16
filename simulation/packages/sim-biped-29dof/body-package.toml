@@ -1,0 +1,367 @@
+# ─────────────────────────────────────────────────────────────
+
+#
+# J=29（左腿6/右腿6/腰3/左臂7/右臂7）= state_order = 模型关节文档序。
+# motor_fields q+dq+tau → b_max=3：基础宽度 3·29=87，+IMU=97，+goal=101（§6.3 宽度集）。
+# 肘中立位 -0.75（软域 [-1.45,-0.05] 内——containment 装载校验，同款理由见夹具包）。
+# ─────────────────────────────────────────────────────────────
+
+[core]
+package_name = "sim-biped-29dof"
+version = "0.1.0"
+word_schema_version = 1
+abi_version = 1
+runtime_min = "0.9.0"
+certified_by = "sim-local"
+
+[protocol]
+transport = "dds"
+frequency_hz = 50
+heartbeat_ms = 20
+timeout_ms = 100
+
+[protocol.joint_mapping]
+ordered = [
+  "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+  "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+  "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+  "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+  "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+  "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint",
+  "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+  "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint",
+  "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint",
+]
+
+[protocol.dds]
+domain_id = 42
+participant_name = "mindpal-agent"
+
+[protocol.dds.actuator_topics.joint_cmd]
+topic_name = "mp/sim/biped29/lowcmd"
+type_name = "mindpal::JointTargets"
+reliability = "reliable"
+history_depth = 1
+
+[protocol.dds.sensor_topics.joint_state]
+topic_name = "mp/sim/biped29/lowstate"
+type_name = "mindpal::JointStates"
+reliability = "best_effort"
+history_depth = 1
+motor_fields = ["f32:q", "f32:dq", "f32:tau"]
+
+[protocol.dds.qos]
+preset = "control"
+
+[profile]
+body_height_m = 1.32
+state_order = [
+  "left_hip_pitch_joint", "left_hip_roll_joint", "left_hip_yaw_joint",
+  "left_knee_joint", "left_ankle_pitch_joint", "left_ankle_roll_joint",
+  "right_hip_pitch_joint", "right_hip_roll_joint", "right_hip_yaw_joint",
+  "right_knee_joint", "right_ankle_pitch_joint", "right_ankle_roll_joint",
+  "waist_yaw_joint", "waist_roll_joint", "waist_pitch_joint",
+  "left_shoulder_pitch_joint", "left_shoulder_roll_joint", "left_shoulder_yaw_joint",
+  "left_elbow_joint", "left_wrist_roll_joint", "left_wrist_pitch_joint", "left_wrist_yaw_joint",
+  "right_shoulder_pitch_joint", "right_shoulder_roll_joint", "right_shoulder_yaw_joint",
+  "right_elbow_joint", "right_wrist_roll_joint", "right_wrist_pitch_joint", "right_wrist_yaw_joint",
+]
+gaze_anchor = "waist_yaw_joint"       # G1 无头颈自由度——腰偏航（夹具包同款）
+
+[profile.joints.left_hip_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.5, max = 3.0 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_hip_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.5, max = 0.5 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_hip_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_knee_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.3, max = 2.1 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_ankle_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.9, max = 0.6 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.left_ankle_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.4, max = 0.4 }
+sign = 1
+group = "left_leg"
+
+[profile.joints.right_hip_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.5, max = 3.0 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_hip_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.5, max = 0.5 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_hip_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_knee_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.3, max = 2.1 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_ankle_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.9, max = 0.6 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.right_ankle_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.4, max = 0.4 }
+sign = 1
+group = "right_leg"
+
+[profile.joints.waist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.08, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }
+sign = 1
+group = "waist"
+
+[profile.joints.waist_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.6, max = 0.6 }
+sign = 1
+group = "waist"
+
+[profile.joints.waist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -0.6, max = 0.6 }
+sign = 1
+group = "waist"
+
+[profile.joints.left_shoulder_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_shoulder_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_shoulder_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_elbow_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 0.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.left_wrist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "left_arm"
+
+[profile.joints.right_shoulder_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -2.6, max = 2.6 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_shoulder_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 1.5 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_shoulder_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_elbow_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.5, max = 0.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_roll_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_pitch_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.joints.right_wrist_yaw_joint]
+dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
+limits = { min = -1.0, max = 1.0 }
+sign = 1
+group = "right_arm"
+
+[profile.stiffness_tiers]
+soft = 0.3
+normal = 0.7
+firm = 1.0
+
+[profile.dynamics]
+max_velocity_rad_s = 12.0
+kp = 100.0                            # lowcmd KP 域（夹具包同款——桥接器 PD 同源）
+ki = 0.0
+kd = 2.0
+
+[profile.timing]
+hold_timeout_s = 30
+auto_return_ms = 1200
+inject_window_ms = 10000
+
+[safety]
+# contact_force_limit_n 未声明——冒烟模型无力觉传感（n_ft=0 诚实缺省）
+
+[safety.stream_loss]
+action = "damping"
+
+[safety.estop]
+action = "freeze"
+
+[calibration]
+amplitude_scale = 1.0
+[calibration.neutral]
+left_hip_pitch_joint = 0.0
+left_hip_roll_joint = 0.0
+left_hip_yaw_joint = 0.0
+left_knee_joint = 0.0
+left_ankle_pitch_joint = 0.0
+left_ankle_roll_joint = 0.0
+right_hip_pitch_joint = 0.0
+right_hip_roll_joint = 0.0
+right_hip_yaw_joint = 0.0
+right_knee_joint = 0.0
+right_ankle_pitch_joint = 0.0
+right_ankle_roll_joint = 0.0
+waist_yaw_joint = 0.0
+waist_roll_joint = 0.0
+waist_pitch_joint = 0.0
+left_shoulder_pitch_joint = 0.0
+left_shoulder_roll_joint = 0.0
+left_shoulder_yaw_joint = 0.0
+left_elbow_joint = -0.75              # 软域 [-1.45,-0.05] 内（containment 装载校验）
+left_wrist_roll_joint = 0.0
+left_wrist_pitch_joint = 0.0
+left_wrist_yaw_joint = 0.0
+right_shoulder_pitch_joint = 0.0
+right_shoulder_roll_joint = 0.0
+right_shoulder_yaw_joint = 0.0
+right_elbow_joint = -0.75             # 同上
+right_wrist_roll_joint = 0.0
+right_wrist_pitch_joint = 0.0
+right_wrist_yaw_joint = 0.0
+
+[[acquisition.cameras]]
+kind = "http_image"
+device = "http://127.0.0.1:8284/frame.jpg"
+role = "main"
+depth = false
+intrinsics = { fx = 416.7, fy = 416.7, cx = 320.0, cy = 240.0 }  # f = h/(2·tan(fovy/2))，fovy=60°/480p
+
+# balance：act = (1+k)·neutral − k·q → 扰动后指数回归（tri_01 判据语义）
+[[policies.rows]]
+name = "balance_hold"
+family = "balance"
+weights = "policies/balance.onnx"
+frequency_hz = 50.0
+priority = "task"
+obs_dim = 97
+goal_conditioned = false
+
+# reach：goal_conditioned——act = neutral + g·gx·sign_i（tri_02 判据语义）
+[[policies.rows]]
+name = "reach_goal"
+family = "manipulation"
+weights = "policies/reach.onnx"
+frequency_hz = 50.0
+priority = "task"
+obs_dim = 101
+goal_conditioned = true
+
+# deform：act = q + v_i → 恒速漂移（tri_03 判据语义；出线钳制兜底）
+[[policies.rows]]
+name = "deform_ramp"
+family = "deform"
+weights = "policies/deform.onnx"
+frequency_hz = 50.0
+priority = "task"
+obs_dim = 97
+goal_conditioned = false
+
+# expression：act = neutral 保持（冒烟占位——自然度=训练域，不属测试权重断言面）
+[[policies.rows]]
+name = "greet_wave"
+family = "expression"
+weights = "policies/greet_wave.onnx"
+frequency_hz = 100.0
+priority = "task"
+obs_dim = 97
+goal_conditioned = false
+
+[[fastbrains.rows]]
+name = "tactician"
+kind = "onnx"
+weights = "fastbrains/tactician.onnx"
+outputs = { goal_stream = "reach_goal" }
+when_to_use = 'reach_goal 的战术层——按 q0 反馈持续微调 goal_x（活反馈环演示脑）'
+rate_hz = 20.0
+budget_ms = 1200
+
+[[words.rows]]
+name = "grasp_bottle"
+sides = ["l", "r"]
+when_to_use = '抓取登记实体（演示操作词绑定——reach_goal 策略闭环）'
+[words.rows.manipulate]
+policy = "reach_goal"
+task = "grasp"
+max_duration_ms = 30000
+force = "normal"

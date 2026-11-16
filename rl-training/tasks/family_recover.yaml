@@ -1,0 +1,18 @@
+# 运动模式级原语: 摔倒恢复(self-right)——balance 制式实例
+# 力学结构 = 倒地→起身的全身翻滚(与行走/操作不同维度);初始位 = 侧躺(start_fallen)
+# 与翻跟头同源技术(全身翻转),判据不同: 起身站定(upright+高度)而非腾空峰值
+name: family_recover
+row_name: self_right
+kind: policy
+family: balance
+obs_mode: base
+priority: task
+control_hz: 50
+episode_s: 6
+action_scale: 0.5            # 起身需要大行程
+soft_limit_margin: 0.05
+start_fallen: true           # 倒地初始位(侧躺)
+airborne_ok: true            # 起身过程不判摔(初始即倒地)
+randomize: {imu_noise: 0.005, encoder_noise: 0.003, mass_jitter: 0.1}
+reward: {rise: 2.0, upright: 1.0, alive: 0.5, action_rate: 0.01, tau: 0.001}
+gate: {peak_z: 0.95}         # 起身 = 骨盆回到站立高度

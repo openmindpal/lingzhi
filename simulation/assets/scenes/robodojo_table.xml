@@ -1,0 +1,212 @@
+<mujoco model="robodojo_table">
+  <!-- 29-DOF 双臂双足冒烟本体（对照 fixtures/tri-family G1 关节名/限位——仿真域）。
+       契约：
+         - 关节名/序 = 包 state_order（左腿6/右腿6/腰3/左臂7/右臂7，文档序=编译序）
+         - 限位 = fixtures/tri-family/body-package.toml profile 同值（仿真=部署同限位）
+         - 骨盆固定（无自由底座）——冒烟模型：关节层配平断言成立；
+           自由底座+真平衡权重 = 训练域，不属测试权重冒烟范围（诚实边界）
+         - 肘中立位 -0.75 = 软域 [-1.45,-0.05] 内（装载校验 containment） -->
+  <option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+  <default>
+    <joint damping="0.8" armature="0.01"/>
+    <geom rgba="0.75 0.75 0.8 1" contype="1" conaffinity="0"/>
+  </default>
+
+  <worldbody>
+    <!-- ── robodojo 绑定验证注入（gen_robodojo_scene.py 数值生成，勿手改）── -->
+    <!-- 深度相机：pos/quat = 引擎声明（mount_xyz/rpy）数值推导——权威 bridge/engine_frames.py -->
+    <camera name="depth_cam" pos="0.35 0.0 1.2"
+            quat="0.674379723 0.212631110 -0.212631110 -0.674379723" fovy="39.6"/>
+
+    <!-- 桌：顶面 0.75m，中心 = 光轴-桌交点 -->
+    <body name="table" pos="0.665 0.0 0.700">
+      <geom name="table_geom" type="box" size="0.35 0.35 0.05" rgba="0.55 0.4 0.25 1"
+            contype="1" conaffinity="1"/>
+    </body>
+
+    <!-- 目标盒（静态——绑定验证变体经 resident /variant 路由改 body_pos/geom_size） -->
+    <body name="target_box" pos="0.665 0.0 0.800">
+      <geom name="target_geom" type="box" size="0.05 0.05 0.05"
+            mass="0.4" rgba="0.2 0.5 0.9 1" contype="1" conaffinity="1"/>
+    </body>
+
+    <!-- 干扰盒（clutter 回合近置偏移；非 clutter 回合被移出视场角） -->
+    <body name="distractor_box" pos="0.825 0.120 0.800">
+      <geom name="distractor_geom" type="box" size="0.05 0.05 0.05"
+            mass="0.4" rgba="0.8 0.3 0.2 1" contype="1" conaffinity="1"/>
+    </body>
+
+    <light directional="true" pos="0 0 3" dir="0 0 -1"/>
+    <geom name="ground" type="plane" size="3 3 0.1" rgba="0.25 0.3 0.25 1" contype="1" conaffinity="1"/>
+
+    <body name="pelvis" pos="0 0 1.0">
+      <geom type="box" size="0.09 0.06 0.08" mass="6" rgba="0.3 0.3 0.35 1"/>
+
+      <!-- ── 左腿 6（文档序 0-5）── -->
+      <body name="l_thigh1" pos="0.0 -0.09 0">
+        <joint name="left_hip_pitch_joint" type="hinge" axis="0 1 0" range="-143.24 171.89"/>
+        <geom type="capsule" fromto="0 0 0 0 0 0.03" size="0.03" mass="1.2"/>
+        <body name="l_thigh2">
+          <joint name="left_hip_roll_joint" type="hinge" axis="1 0 0" range="-28.65 28.65"/>
+          <geom type="capsule" fromto="0 0 0 0 0 0.02" size="0.028" mass="0.8"/>
+          <body name="l_thigh3">
+            <joint name="left_hip_yaw_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+            <geom type="capsule" fromto="0 0 0 0 0 -0.18" size="0.035" mass="3"/>
+            <body name="l_shin" pos="0 0 -0.18">
+              <joint name="left_knee_joint" type="hinge" axis="0 1 0" range="-17.19 120.32"/>
+              <geom type="capsule" fromto="0 0 0 0 0 -0.16" size="0.03" mass="2"/>
+              <body name="l_ankle" pos="0 0 -0.16">
+                <joint name="left_ankle_pitch_joint" type="hinge" axis="0 1 0" range="-51.57 34.38"/>
+                <geom type="sphere" size="0.02" mass="0.2"/>
+                <body name="l_foot">
+                  <joint name="left_ankle_roll_joint" type="hinge" axis="1 0 0" range="-22.92 22.92"/>
+                  <geom type="box" size="0.04 0.03 0.015" pos="0 0 -0.02" mass="0.6"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <!-- ── 右腿 6（文档序 6-11）── -->
+      <body name="r_thigh1" pos="0.0 0.09 0">
+        <joint name="right_hip_pitch_joint" type="hinge" axis="0 1 0" range="-143.24 171.89"/>
+        <geom type="capsule" fromto="0 0 0 0 0 0.03" size="0.03" mass="1.2"/>
+        <body name="r_thigh2">
+          <joint name="right_hip_roll_joint" type="hinge" axis="1 0 0" range="-28.65 28.65"/>
+          <geom type="capsule" fromto="0 0 0 0 0 0.02" size="0.028" mass="0.8"/>
+          <body name="r_thigh3">
+            <joint name="right_hip_yaw_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+            <geom type="capsule" fromto="0 0 0 0 0 -0.18" size="0.035" mass="3"/>
+            <body name="r_shin" pos="0 0 -0.18">
+              <joint name="right_knee_joint" type="hinge" axis="0 1 0" range="-17.19 120.32"/>
+              <geom type="capsule" fromto="0 0 0 0 0 -0.16" size="0.03" mass="2"/>
+              <body name="r_ankle" pos="0 0 -0.16">
+                <joint name="right_ankle_pitch_joint" type="hinge" axis="0 1 0" range="-51.57 34.38"/>
+                <geom type="sphere" size="0.02" mass="0.2"/>
+                <body name="r_foot">
+                  <joint name="right_ankle_roll_joint" type="hinge" axis="1 0 0" range="-22.92 22.92"/>
+                  <geom type="box" size="0.04 0.03 0.015" pos="0 0 -0.02" mass="0.6"/>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+
+      <!-- ── 腰 3（文档序 12-14）→ 躯干 ── -->
+      <body name="waist1" pos="0 0 0.08">
+        <joint name="waist_yaw_joint" type="hinge" axis="0 0 1" range="-148.97 148.97"/>
+        <geom type="cylinder" size="0.045 0.015" mass="1.5"/>
+        <body name="waist2">
+          <joint name="waist_roll_joint" type="hinge" axis="1 0 0" range="-34.38 34.38"/>
+          <geom type="cylinder" size="0.042 0.012" mass="1.2"/>
+          <body name="torso">
+            <joint name="waist_pitch_joint" type="hinge" axis="0 1 0" range="-34.38 34.38"/>
+            <geom type="capsule" fromto="0 0 0 0 0 0.22" size="0.05" mass="8"/>
+            <site name="imu" pos="0 0 0.18" size="0.004"/>
+            <camera name="head_cam" pos="0.06 0 0.24" xyaxes="0 1 0 0 0 1" fovy="60"/>
+
+            <!-- ── 左臂 7（文档序 15-21）── -->
+            <body name="l_arm1" pos="0 -0.12 0.18">
+              <joint name="left_shoulder_pitch_joint" type="hinge" axis="0 1 0" range="-148.97 148.97"/>
+              <geom type="sphere" size="0.03" mass="0.5"/>
+              <body name="l_arm2">
+                <joint name="left_shoulder_roll_joint" type="hinge" axis="1 0 0" range="-85.94 85.94"/>
+                <geom type="sphere" size="0.026" mass="0.4"/>
+                <body name="l_arm3">
+                  <joint name="left_shoulder_yaw_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+                  <geom type="capsule" fromto="0 0 0 0 0 -0.10" size="0.025" mass="1"/>
+                  <body name="l_forearm1" pos="0 0 -0.10">
+                    <joint name="left_elbow_joint" type="hinge" axis="0 1 0" range="-85.94 0.00"/>
+                    <geom type="capsule" fromto="0 0 0 0 0 -0.09" size="0.02" mass="0.7"/>
+                    <body name="l_wrist1" pos="0 0 -0.09">
+                      <joint name="left_wrist_roll_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+                        <geom type="cylinder" size="0.014 0.008" mass="0.15"/>
+                      <body name="l_wrist2">
+                        <joint name="left_wrist_pitch_joint" type="hinge" axis="0 1 0" range="-57.30 57.30"/>
+                          <geom type="cylinder" size="0.013 0.006" mass="0.12"/>
+                        <body name="l_hand">
+                          <joint name="left_wrist_yaw_joint" type="hinge" axis="0 1 0" range="-57.30 57.30"/>
+                          <geom type="box" size="0.012 0.012 0.02" pos="0 0 -0.02" mass="0.3"/>
+                          <site name="l_tool" pos="0 0 -0.045" size="0.004"/>
+                          <!-- 手指 3 节链（fixture 抓取链 C3 闭合自由度——
+                               量程对齐本体包声明 [0, 1.2] rad = [0, 68.75]°）-->
+                          <body name="l_finger0" pos="0 0 -0.045">
+                            <joint name="left_hand_joint_0" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                            <geom type="capsule" fromto="0 0 0 0 0 -0.04" size="0.006" mass="0.02"/>
+                            <body name="l_finger1" pos="0 0 -0.04">
+                              <joint name="left_hand_joint_1" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                              <geom type="capsule" fromto="0 0 0 0 0 -0.035" size="0.005" mass="0.015"/>
+                              <body name="l_finger2" pos="0 0 -0.035">
+                                <joint name="left_hand_joint_2" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                                <geom type="capsule" fromto="0 0 0 0 0 -0.03" size="0.004" mass="0.01"/>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+
+            <!-- ── 右臂 7（文档序 22-28）── -->
+            <body name="r_arm1" pos="0 0.12 0.18">
+              <joint name="right_shoulder_pitch_joint" type="hinge" axis="0 1 0" range="-148.97 148.97"/>
+              <geom type="sphere" size="0.03" mass="0.5"/>
+              <body name="r_arm2">
+                <joint name="right_shoulder_roll_joint" type="hinge" axis="1 0 0" range="-85.94 85.94"/>
+                <geom type="sphere" size="0.026" mass="0.4"/>
+                <body name="r_arm3">
+                  <joint name="right_shoulder_yaw_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+                  <geom type="capsule" fromto="0 0 0 0 0 -0.10" size="0.025" mass="1"/>
+                  <body name="r_forearm1" pos="0 0 -0.10">
+                    <joint name="right_elbow_joint" type="hinge" axis="0 1 0" range="-85.94 0.00"/>
+                    <geom type="capsule" fromto="0 0 0 0 0 -0.09" size="0.02" mass="0.7"/>
+                    <body name="r_wrist1" pos="0 0 -0.09">
+                      <joint name="right_wrist_roll_joint" type="hinge" axis="0 0 1" range="-57.30 57.30"/>
+                        <geom type="cylinder" size="0.014 0.008" mass="0.15"/>
+                      <body name="r_wrist2">
+                        <joint name="right_wrist_pitch_joint" type="hinge" axis="0 1 0" range="-57.30 57.30"/>
+                          <geom type="cylinder" size="0.013 0.006" mass="0.12"/>
+                        <body name="r_hand">
+                          <joint name="right_wrist_yaw_joint" type="hinge" axis="0 1 0" range="-57.30 57.30"/>
+                          <geom type="box" size="0.012 0.012 0.02" pos="0 0 -0.02" mass="0.3"/>
+                          <site name="r_tool" pos="0 0 -0.045" size="0.004"/>
+                          <!-- 手指 3 节链（fixture 抓取链 C3 闭合自由度——
+                               量程对齐本体包声明 [0, 1.2] rad = [0, 68.75]°）-->
+                          <body name="r_finger0" pos="0 0 -0.045">
+                            <joint name="right_hand_joint_0" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                            <geom type="capsule" fromto="0 0 0 0 0 -0.04" size="0.006" mass="0.02"/>
+                            <body name="r_finger1" pos="0 0 -0.04">
+                              <joint name="right_hand_joint_1" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                              <geom type="capsule" fromto="0 0 0 0 0 -0.035" size="0.005" mass="0.015"/>
+                              <body name="r_finger2" pos="0 0 -0.035">
+                                <joint name="right_hand_joint_2" type="hinge" axis="1 0 0" range="0 68.75" damping="0.02"/>
+                                <geom type="capsule" fromto="0 0 0 0 0 -0.03" size="0.004" mass="0.01"/>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framequat objtype="site" objname="imu"/>
+    <gyro site="imu"/>
+    <accelerometer site="imu"/>
+  </sensor>
+</mujoco>
