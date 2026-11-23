@@ -57,6 +57,9 @@ def generate_urdf(xml: str | None = None, out: str = OUT) -> str:
             pos = m.geom_pos[g]
             if gtype == int(mujoco.mjtGeom.mjGEOM_PLANE):
                 continue   # 平面 = 环境,不进本体
+            if gtype == int(mujoco.mjtGeom.mjGEOM_MESH):
+                continue   # mesh 碰撞(官方模型)不导出——对拍窗 = 无接触纯惯量段,
+                           # 惯量来自编译模型精确值;视觉壳不参与动力学
             if gtype == int(mujoco.mjtGeom.mjGEOM_SPHERE):
                 shape = f'<sphere radius="{size[0]:.6g}"/>'
             elif gtype == int(mujoco.mjtGeom.mjGEOM_BOX):
@@ -100,6 +103,8 @@ def generate_urdf(xml: str | None = None, out: str = OUT) -> str:
 
     # 遍历运动树(world 的直接子体 = 根链接)
     bodies = [mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, b) for b in range(m.nbody)]
+    if int(m.body_jntnum[1]) == 0:
+        parts.append('  <link name="world"/>')   # 固定底座变体: 骨盆焊接父 = world(必须存在)
     for b in range(1, m.nbody):
         name = bodies[b]
         if not name:

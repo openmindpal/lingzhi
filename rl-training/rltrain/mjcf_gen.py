@@ -20,6 +20,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(_HERE, "..", "envs", "g1", "assets")
 SPEC = os.path.join(_HERE, "..", "envs", "g1", "body_spec.yaml")
 SMOKE = os.path.join(_HERE, "..", "..", "simulation", "assets", "models", "biped_29dof.xml")
+OFFICIAL = os.path.join(ASSETS, "official", "g1.xml")
 GEN_DIR = os.path.join(ASSETS, "gen")
 
 MASS_RE = re.compile(r'mass="([0-9.eE+-]+)"')
@@ -238,29 +239,91 @@ def _insert_terrain(xml: str, terrain: dict) -> str:
     return xml.replace("</worldbody>", "".join(add) + "</worldbody>")
 
 
+def _official_base() -> str:
+    """官方资产基座(MuJoCo Menagerie unitree_g1 g1_29dof_rev_1_0)→ 平台训练变换。
+
+    官方质量/惯量/几何/限位/IMU 位原样保留(权威 = 官方模型,不做质量标度)。
+    变换仅限平台接口面:
+      1. 剥 <actuator>/<keyframe>——平台伺服 = qfrc_applied 直写(PD 见 body_spec.gains)
+      2. 执行器 forcerange → 关节 actuatorfrcrange(官方力矩限,伺服限幅读这里)
+      3. freejoint 改名 root(env_mj 契约名)
+      4. 注入契约传感器 framequat/gyro/accelerometer @ imu_in_pelvis(官方 IMU 位)
+      5. 注入末端 site l_tool/r_tool(腕偏航链内,[平台定义]近似——按末端规格回填)
+      6. meshdir 重定向到官方资产目录(生成产物位于 gen/,官方资产位于 official/)
+    """
+    xml = open(OFFICIAL, encoding="utf-8").read()
+    # 官方力矩限提取: <position ... name="X" joint="Y" forcerange="-88 88"/>
+    for m in re.finditer(r'<position[^>]*joint="([a-z_]+)"[^>]*forcerange="(-?[0-9.e]+) (-?[0-9.e]+)"', xml):
+        jn, lo, hi = m.group(1), m.group(2), m.group(3)
+        pat = re.compile(rf'(<joint name="{jn}"[^>]*?)(/>)')
+        if not pat.search(xml):
+            raise RuntimeError(f"官方模型缺关节 {jn}(forcerange 无法挂载)")
+        xml = pat.sub(rf'\1 actuatorfrcrange="{lo} {hi}"\2', xml, count=1)
+    xml = re.sub(r'  <actuator>.*?</actuator>\n', '', xml, flags=re.S)
+    xml = re.sub(r'  <keyframe>.*?</keyframe>\n', '', xml, flags=re.S)
+    xml = xml.replace('<freejoint name="floating_base_joint"/>', '<freejoint name="root"/>')
+    if '<freejoint name="root"/>' not in xml:
+        raise RuntimeError("官方模型缺 freejoint(自由底座变体无法生成)")
+    sensors = ('  <sensor>\n'
+               '    <framequat objtype="site" objname="imu_in_pelvis"/>\n'
+               '    <gyro site="imu_in_pelvis"/>\n'
+               '    <accelerometer site="imu_in_pelvis"/>\n'
+               '  </sensor>\n')
+    xml = xml.replace("</mujoco>", sensors + "</mujoco>")
+    for side, prefix in (("l", "left"), ("r", "right")):
+        pat = re.compile(rf'(<body name="{prefix}_wrist_yaw_link"[^>]*>)')
+        if not pat.search(xml):
+            raise RuntimeError(f"官方模型缺 {prefix}_wrist_yaw_link(末端 site 无法注入)")
+        # 末端 site + 掌框(l_hand/r_hand——焊接刚性体,手包生成器挂点;[样例]几何,
+        # 按 Dex3-1 官方手规格回填——官方 with_hands 变体为替换点)
+        xml = pat.sub(rf'\1\n          <site name="{side}_tool" pos="0.08 0 0" size="0.004"/>\n'
+                      rf'          <body name="{side}_hand" pos="0.08 0 0">\n'
+                      rf'          </body>', xml, count=1)
+    xml = xml.replace('<compiler angle="radian" meshdir="assets"/>',
+                      '<compiler angle="radian" meshdir="../official/meshes"/>')
+    # 官方 g1.xml = 纯机器人模型(scene.xml 才有地板)——注入地面(官方 scene 同款平面)
+    if 'name="floor"' not in xml:
+        xml = xml.replace('<worldbody>',
+                          '<worldbody>\n'
+                          '    <geom name="floor" type="plane" size="0 0 0.05" '
+                          'rgba="0.4 0.45 0.4 1"/>\n', 1)
+    header = ("<!-- 官方规格训练变体(自动生成,勿手改): 基座 = MuJoCo Menagerie unitree_g1\n"
+              "     g1_29dof_rev_1_0(宇树官方模型,DeepMind 策展) + 平台变换(_official_base)\n"
+              "     质量/几何/限位/IMU = 官方原值;PD/力矩限幅 = body_spec.gains + 官方 forcerange -->\n")
+    return header + xml
+
+
 def generate(hands: bool = False, objects: bool = False, press_wall: bool = False,
              terrain: bool = False, cup_on_hand: bool = False, spec_path: str = SPEC,
              src: str | None = None) -> tuple[str, dict]:
     """生成训练变体 XML → 返回 (路径, 生效配置)。
 
-    叠加项: 自由底座(恒开) + 总质量标定 + 手 + 物体 + 按压面 + 不平地形。
+    基座由 body_spec.base 决定: official = 官方资产(规格回填后,真机口径) /
+    smoke = 冒烟拓扑([样例],固定底座冒烟测试口径)。
+    叠加项: 自由底座(恒开) + 总质量标度(仅 smoke) + 手 + 物体 + 按压面 + 不平地形。
     """
     spec = load_spec(spec_path)
-    xml = open(src or SMOKE, encoding="utf-8").read()
-    xml = _mass_scale(xml, float(spec["total_mass_kg"]))
-    # 全局 default → 具名 class(bot)+骨盆 childclass:机器人树继承阻尼/contype,
-    # worldbody 级新资产(flex/粒子/墙)不受 joint damping 影响(flex 顶点禁 damping)
-    xml = xml.replace(
-        '<default>\n    <joint damping="0.8" armature="0.01"/>\n'
-        '    <geom rgba="0.75 0.75 0.8 1" contype="1" conaffinity="0"/>\n  </default>',
-        '<default>\n    <default class="bot">\n      <joint damping="0.8" armature="0.01"/>\n'
-        '      <geom rgba="0.75 0.75 0.8 1" contype="1" conaffinity="0"/>\n    </default>\n  </default>')
-    xml = xml.replace('<body name="pelvis" pos="0 0 1.0">',
-                      '<body name="pelvis" childclass="bot" pos="0 0 1.0">')
-    pelvis = re.search(r'<body name="pelvis"[^>]*>', xml)
-    if "<freejoint" not in xml:
-        xml = xml[:pelvis.end()] + '\n    <freejoint name="root"/>' + xml[pelvis.end():]
-    eff = {"hands": False, "objects": [], "press_wall": False, "j": 29}
+    base = str(spec.get("base", "smoke"))
+    if base == "official":
+        if not os.path.exists(OFFICIAL):
+            raise SystemExit(f"body_spec.base=official 但官方资产缺失: {OFFICIAL}")
+        xml = _official_base()
+    else:
+        xml = open(src or SMOKE, encoding="utf-8").read()
+        xml = _mass_scale(xml, float(spec["total_mass_kg"]))
+        # 全局 default → 具名 class(bot)+骨盆 childclass:机器人树继承阻尼/contype,
+        # worldbody 级新资产(flex/粒子/墙)不受 joint damping 影响(flex 顶点禁 damping)
+        xml = xml.replace(
+            '<default>\n    <joint damping="0.8" armature="0.01"/>\n'
+            '    <geom rgba="0.75 0.75 0.8 1" contype="1" conaffinity="0"/>\n  </default>',
+            '<default>\n    <default class="bot">\n      <joint damping="0.8" armature="0.01"/>\n'
+            '      <geom rgba="0.75 0.75 0.8 1" contype="1" conaffinity="0"/>\n    </default>\n  </default>')
+        xml = xml.replace('<body name="pelvis" pos="0 0 1.0">',
+                          '<body name="pelvis" childclass="bot" pos="0 0 1.0">')
+        pelvis = re.search(r'<body name="pelvis"[^>]*>', xml)
+        if "<freejoint" not in xml:
+            xml = xml[:pelvis.end()] + '\n    <freejoint name="root"/>' + xml[pelvis.end():]
+    eff = {"base": base, "hands": False, "objects": [], "press_wall": False, "j": 29}
     if hands and spec.get("hands", {}).get("enabled", False) is not None:
         hand = dict(spec["hands"])
         hand["enabled"] = True
@@ -299,9 +362,11 @@ def generate(hands: bool = False, objects: bool = False, press_wall: bool = Fals
     key = hashlib.sha256(xml.encode()).hexdigest()[:8]
     out = os.path.join(GEN_DIR, f"g1_train_{key}.xml")
     if not os.path.exists(out):
-        header = ("<!-- 训练变体(自动生成,勿手改): 基座=biped_29dof.xml + body_spec 叠加\n"
-                  f"     项: free-base / mass={spec['total_mass_kg']}kg / hands={eff['hands']} / "
-                  f"objects={[o['name'] for o in eff['objects']]} / wall={eff['press_wall']} -->\n")
+        header = ("<!-- 训练变体(自动生成,勿手改): 基座=body_spec.base "
+                  f"({base}) + 叠加\n"
+                  f"     项: free-base / mass={spec.get('total_mass_kg', '官方原值')}kg / "
+                  f"hands={eff['hands']} / objects={[o['name'] for o in eff['objects']]} / "
+                  f"wall={eff['press_wall']} -->\n")
         with open(out, "w", encoding="utf-8", newline="\n") as f:
             f.write(header + xml)
     eff["xml"] = out
@@ -332,6 +397,39 @@ def generate_for_task(task: dict) -> tuple[str, dict]:
     return generate(hands=bool(a.get("hands")), objects=bool(a.get("objects")),
                     press_wall=bool(a.get("press_wall")), terrain=bool(a.get("terrain")),
                     cup_on_hand=bool(a.get("cup_on_hand")))
+
+
+def build_train_variant(spec_path: str = SPEC) -> str:
+    """env_mj 无 assets 任务时的训练变体入口——基座由 body_spec.base 决定。"""
+    out, _ = generate(spec_path=spec_path)
+    return out
+
+
+def build_fixed_base_variant(spec_path: str = SPEC) -> str:
+    """Sim2Sim MuJoCo 侧(骨盆焊接)——训练变体去 freejoint,内容寻址缓存。
+
+    对拍口径: 固定基座重力响应窗 = 无接触纯惯量段,两引擎 URDF 可转换子集。
+    """
+    src = build_train_variant(spec_path)
+    xml = open(src, encoding="utf-8").read()
+    xml = re.sub(r'\s*<freejoint name="root"/>', '', xml, count=1)
+    if '<freejoint' in xml:
+        raise RuntimeError("固定底座变体仍含 freejoint")
+    # 去地板: 对拍判定窗 = 无接触悬空重力响应段(官方模型站高脚触地,不去即引入
+    # 接触求解器差异——属引擎实现不属模型 parity)
+    xml = re.sub(r'\s*<geom name="floor"[^>]*/>', '', xml, count=1)
+    # 积分器对齐: 对拍 = 模型 parity(质量/惯量/几何),积分器语义不属对拍范围
+    # ——两引擎统一 Euler,保证判定窗内耦合动力学可比
+    xml = xml.replace('<option integrator="implicitfast"/>',
+                      '<option integrator="Euler"/>', 1)
+    header = ("<!-- Sim2Sim 固定底座变体(自动生成,勿手改): 源 = 训练变体去 freejoint -->\n")
+    os.makedirs(GEN_DIR, exist_ok=True)
+    key = hashlib.sha256(xml.encode()).hexdigest()[:8]
+    out = os.path.join(GEN_DIR, f"g1_fixed_{key}.xml")
+    if not os.path.exists(out):
+        with open(out, "w", encoding="utf-8", newline="\n") as f:
+            f.write(header + xml)
+    return out
 
 
 if __name__ == "__main__":

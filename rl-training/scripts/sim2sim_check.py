@@ -50,14 +50,18 @@ def mode_smoke() -> None:
 
 def mode_policy(run: str, seconds: float, onnx: str | None = None) -> None:
     require_pybullet()
-    if not os.path.exists(G1_URDF):
-        from rltrain.urdf_gen import generate_urdf
-        print(f"[sim2sim] URDF 缺失——由训练变体自动生成: {G1_URDF}")
-        generate_urdf(out=G1_URDF)
+    # 对拍两侧同源: MuJoCo 侧 = 固定底座变体(训练变体去 freejoint/去地板——
+    # 悬空无接触重力响应段),URDF 由同一变体生成(基座由 body_spec.base 决定:
+    # official = 官方资产,smoke = 冒烟拓扑)
+    from rltrain.mjcf_gen import build_fixed_base_variant
+    FIXED = build_fixed_base_variant()
+    from rltrain.urdf_gen import generate_urdf
+    generate_urdf(xml=FIXED, out=G1_URDF)   # 确定性重生成——不读缓存防基座切换后错配
+    print(f"[sim2sim] URDF 由固定底座变体生成: {G1_URDF}")
     import json
     import numpy as np
     import onnxruntime as ort
-    from rltrain.g1_cfg import G1Cfg, MJCF_SMOKE
+    from rltrain.g1_cfg import G1Cfg
 
     mf = json.load(open(os.path.join(run, "manifest.json"), encoding="utf-8"))
     cfg = G1Cfg()
@@ -76,11 +80,15 @@ def mode_policy(run: str, seconds: float, onnx: str | None = None) -> None:
         sess = ort.InferenceSession(onnx_resolved, providers=["CPUExecutionProvider"])
         iname = sess.get_inputs()[0].name
     tag = f"policy={os.path.basename(onnx_resolved)}(混沌放大警告)" if onnx else "解析探针(速度脉冲)"
-    print(f"[sim2sim] {tag} mujoco={MJCF_SMOKE}(固定基座) pb={os.path.basename(G1_URDF)}(useFixedBase)")
+    print(f"[sim2sim] {tag} mujoco={os.path.basename(FIXED)}(固定基座) pb={os.path.basename(G1_URDF)}(useFixedBase)")
 
-    # MuJoCo 在环轨迹(固定基座 = 冒烟模型——骨盆焊死,重力经支撑加载关节)
+    # MuJoCo 在环轨迹(固定基座 = 训练变体去 freejoint/去地板——骨盆焊死,重力经支撑加载关节)
     import mujoco
-    m = mujoco.MjModel.from_xml_path(MJCF_SMOKE)
+    m = mujoco.MjModel.from_xml_path(FIXED)
+    # 判定窗 = 无接触重力响应段: 自碰撞冲量属求解器差异,不属模型 parity
+    # (与"落点接触退出判据"同原则)。MJ 默认开自碰撞而 PB 默认关——
+    # 模型级禁接触使两引擎口径一致
+    m.opt.disableflags |= int(mujoco.mjtDisableBit.mjDSBL_CONTACT)
     d = mujoco.MjData(m)
     mujoco.mj_resetData(m, d)
     mujoco.mj_forward(m, d)
@@ -143,6 +151,11 @@ def mode_policy(run: str, seconds: float, onnx: str | None = None) -> None:
     # ── PyBullet 重放腿(同初态/同策略/同 PD 律) + <5° 判据 ──
     verdict = replay_pb(run, seconds, onnx_resolved)
     print(f"[sim2sim] verdict: {verdict}")
+    if onnx_resolved:
+        # 文件头语义: --onnx = 策略在环诊断参考(混沌放大,判据不设门)——
+        # 训练策略逐拍放大引擎微小差异,门 = 解析探针模式
+        print("[sim2sim] 策略在环 = 诊断参考(混沌放大,不设门)——对拍门以解析探针为准")
+        sys.exit(0)
     sys.exit(0 if verdict["pass"] else 1)
 
 

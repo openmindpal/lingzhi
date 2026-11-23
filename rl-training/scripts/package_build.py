@@ -20,7 +20,7 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
-import tomllib
+from rltrain._compat import tomllib
 
 from rltrain.contract import check_obs_dim
 from rltrain.g1_cfg import G1Cfg, PKG_TOML

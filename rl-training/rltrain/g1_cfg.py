@@ -10,12 +10,13 @@ from __future__ import annotations
 import os
 import re
 import sys
-import tomllib
 
 # 直跑(self-test)时的包路径引导
 _PKG_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _PKG_PARENT not in sys.path:
     sys.path.insert(0, _PKG_PARENT)
+
+from rltrain._compat import tomllib  # noqa: E402  — 唯一兼容点(rltrain/_compat)
 
 _REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 # 本体包契约样例:首选 body-sdk 对接套件(交付面),回退 body-packages(历史位置)

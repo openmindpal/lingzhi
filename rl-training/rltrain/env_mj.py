@@ -17,10 +17,12 @@ from __future__ import annotations
 import numpy as np
 import mujoco
 
-from rltrain.g1_cfg import G1Cfg, build_free_base_mjcf
+from rltrain.g1_cfg import G1Cfg
+from rltrain.mjcf_gen import generate_for_task, build_train_variant, load_spec
 from rltrain.obs_assembler import ObsAssembler
 from rltrain.contract import SOFT_LIMIT_MARGIN_RAD
 from rltrain import rewards
+from rltrain.rewards import FALL_Z
 
 
 def _find_sensor(model, stype) -> tuple[int, int]:
@@ -53,7 +55,7 @@ class G1VecEnv:
             self.joint_names = self._joint_names_with_hands()
             self.j = len(self.joint_names)
         else:
-            self.xml = build_free_base_mjcf()
+            self.xml = build_train_variant()
             self.joint_names = list(cfg.joints)
         self.k = 2  # 接触力路数: 0=左腕(含左手) 1=右腕(含右手)——路序包文档化
         self.assembler = ObsAssembler(self.j, task["obs_mode"], self.k)
@@ -78,6 +80,10 @@ class G1VecEnv:
         self._map_ee(m0)
         self._map_route_geoms(m0)
         self._map_object(m0)
+        # ── 出生高度/每关节 PD/官方力矩限幅——模型属性,两基座通用 ──
+        self._gains_vec(m0)          # 生成 kp_arr/kd_arr(向量)——body_spec.gains,缺省=包标量
+        self._torque_limits(m0)      # 官方 forcerange(关节 actuatorfrcrange)→ 伺服限幅
+        self._compute_spawn(m0)      # 出生骨盆高 = 模型推导(脚底贴地+1cm 余量)
         self.dt_ctrl = 1.0 / self.control_hz
         self.n_sub = max(1, int(round(self.dt_ctrl / m0.opt.timestep)))
         self.max_ep_steps = int(self.episode_s * self.control_hz)
@@ -218,7 +224,10 @@ class G1VecEnv:
                      for s, name in self.cfg.tool_sites.items()}
 
     def _map_route_geoms(self, m) -> None:
-        """接触力路: 0=左腕(含左手链) 1=右腕(含右手链)——手开时聚合 palm+指段。"""
+        """接触力路: 0=左腕(含左手链) 1=右腕(含右手链)——手开时聚合 palm+指段。
+
+        接触路由体 = {side}_hand(两个基座都有: smoke 原生,official 由适配器注入掌框)。
+        """
         self.route_geoms = {}
         for route, side in ((0, "l"), (1, "r")):
             geoms: set[int] = set()
@@ -363,6 +372,81 @@ class G1VecEnv:
         th = r.uniform(0, 2 * np.pi)
         return np.array([np.cos(th), np.sin(th), 0.0])
 
+    def _gains_vec(self, m) -> None:
+        """每关节 PD(body_spec.gains,官方口径)——缺省回退本体包标量 kp/kd。
+
+        kd: null 的关节按官方 MJCF 位置伺服 dampratio=1 等价推导:
+        kd = 2·√(kp·dof_M0)(dof_M0 = 编译模型 qpos0 关节等效惯量+armature)。
+        """
+        g = (load_spec() or {}).get("gains") or {}
+        kp_s, kd_s = g.get("kp") or {}, g.get("kd") or {}
+        if not kp_s:
+            self.kp_arr = np.full(self.j, float(self.cfg.kp))
+            self.kd_arr = np.full(self.j, float(self.cfg.kd))
+            return
+        kp = np.zeros(self.j)
+        kd = np.zeros(self.j)
+        for i, n in enumerate(self.joint_names):
+            kpv = kp_s.get(n)
+            kdv = kd_s.get(n)
+            if kpv is None:
+                # 手指等未声明关节: 腕伺服同款 kp=500 + dampratio=1 等价推导
+                kpv = 500.0
+            kp[i] = float(kpv)
+            if kdv is None:
+                dof = int(self.dadr[i])
+                m0 = float(m.dof_M0[dof])
+                kd[i] = 2.0 * np.sqrt(kp[i] * m0)
+            else:
+                kd[i] = float(kdv)
+        self.kp_arr, self.kd_arr = kp, kd
+
+    def _torque_limits(self, m) -> None:
+        """官方力矩限(适配器挂载的关节 actuatorfrcrange)→ 伺服输出钳制。
+
+        (0,0) = 未限(冒烟基座)——不钳制。官方模型 hip 88/139,knee 139,
+        ankle/waist 50,肩肘 25,腕 5/25——真机伺服饱和的仿真对应。
+        """
+        lo, hi = [], []
+        limited = False
+        for i, n in enumerate(self.joint_names):
+            jid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_JOINT, n)
+            a, b = float(m.jnt_actfrcrange[jid][0]), float(m.jnt_actfrcrange[jid][1])
+            if a != 0.0 or b != 0.0:
+                limited = True
+            lo.append(a if limited else -np.inf)
+            hi.append(b if limited else np.inf)
+        self.trq_lo = np.asarray(lo) if limited else None
+        self.trq_hi = np.asarray(hi) if limited else None
+
+    def _compute_spawn(self, m) -> None:
+        """出生骨盆高度 = 模型推导——z = qpos0 骨盆高 − qpos0 最低碰撞点高 + 1cm 余量。
+
+        最低碰撞点 = mj_geomDistance(地面平面 × 各碰撞 geom)——mesh 精确距离。
+        出生高度必须是模型属性而非全局常量: 各基座站立高度不同(官方 G1 0.793m,
+        冒烟变体 ~0.37m),常量对任一基座都可能造成出生悬空或越限。
+        站立高 < FALL_Z 的资产无法支撑自由底座站立训练——构建期硬拒。
+        """
+        d = mujoco.MjData(m)
+        mujoco.mj_resetData(m, d)
+        mujoco.mj_forward(m, d)
+        plane = next((g for g in range(m.ngeom)
+                      if m.geom_type[g] == mujoco.mjtGeom.mjGEOM_PLANE), None)
+        if plane is not None:
+            min_d = 1e9
+            for g in range(m.ngeom):
+                if g == plane or m.geom_contype[g] == 0:
+                    continue   # 非碰撞 geom(视觉壳)不参与
+                min_d = min(min_d, float(mujoco.mj_geomDistance(m, d, g, plane, 2.0, None)))
+            min_z = min_d
+        else:
+            min_z = 0.0
+        base_z = float(d.qpos[self.root_qadr + 2])
+        self.spawn_z = base_z - min_z + 0.01
+        if self.spawn_z < FALL_Z:
+            raise RuntimeError(f"模型站立骨盆高 {self.spawn_z:.3f}m < FALL_Z {FALL_Z}m"
+                               "——该资产无法支撑自由底座站立训练(基座换 official)")
+
     def reset(self, envs=None) -> np.ndarray:
         envs = list(range(self.n)) if envs is None else list(envs)
         obs = [None] * self.n
@@ -371,7 +455,7 @@ class G1VecEnv:
             mujoco.mj_resetData(m, d)
             if self.free_base:
                 d.qpos[self.root_qadr:self.root_qadr + 2] = 0.0
-                d.qpos[self.root_qadr + 2] = 1.0
+                d.qpos[self.root_qadr + 2] = self.spawn_z
                 d.qpos[self.root_qadr + 3:self.root_qadr + 7] = [1.0, 0.0, 0.0, 0.0]
                 if self.start_fallen:   # 倒地初始位(恢复训练): 侧躺
                     d.qpos[self.root_qadr + 2] = 0.35
@@ -497,12 +581,14 @@ class G1VecEnv:
 
     def _servo(self, e: int, target: np.ndarray, steps: int) -> None:
         m, d = self.models[e], self.datas[e]
-        kp, kd = self.cfg.kp, self.cfg.kd
         push = self.ep_push[e]
         for _ in range(steps):
             q = d.qpos[self.qadr]
             dq = d.qvel[self.dadr]
-            d.qfrc_applied[self.dadr] = kp * (target - q) - kd * dq
+            u = self.kp_arr * (target - q) - self.kd_arr * dq
+            if self.trq_hi is not None:
+                u = np.clip(u, self.trq_lo, self.trq_hi)   # 官方 forcerange——真机伺服饱和对应
+            d.qfrc_applied[self.dadr] = u
             if self.free_base:
                 d.xfrc_applied[self.pelvis_bid] = 0.0
                 if self.dodge and self.threat_body is not None:
@@ -697,7 +783,7 @@ class G1VecEnv:
         m, d = self.models[e], self.datas[e]
         rate = float(np.mean(np.abs(a - self.prev_action[e])))
         self.prev_action[e] = a.copy()
-        tau_norm = float(np.mean(np.abs(d.qfrc_applied[self.dadr]))) / max(self.cfg.kp, 1.0)
+        tau_norm = float(np.mean(np.abs(d.qfrc_applied[self.dadr]))) / float(np.max(self.kp_arr))
         mm: dict = {"action_rate": rate, "tau_norm": tau_norm, "t": self.t_step[e],
                     "q": np.asarray(d.qpos[self.qadr], dtype=np.float64)}
         if self.free_base:

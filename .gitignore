@@ -1,0 +1,19 @@
+# ── 凭据/密钥(绝不推送) ──
+.deploy-tmp/
+*.pem
+*.key
+.env
+id_rsa*
+id_ed25519*
+known_hosts
+
+# ── 会话产物/大包 ──
+*.tgz
+*.tar.gz
+vendor/
+nohup.out
+*.log
+
+# ── Python ──
+__pycache__/
+*.pyc

@@ -1,9 +1,12 @@
-# RL 训练平台依赖（版本 = 本地实跑全绿的快照 2026-11-14）
-# torch 由 workflow 单独以 CPU 源安装（避免拉 CUDA 巨包），此处仅列非 torch 项
+# RL 训练平台依赖(版本 = 实跑全绿快照 2026-11-24)
+# torch 由部署侧单独安装(GPU 部署 = CUDA 源 2.14.1+cu130;无 GPU 环境 = CPU 源)
+# numpy 2.2.6: 2.4.6 在部分镜像源缺货,2.2.6 实跑等价
+# pybullet 3.2.7: 3.2.6 wheel 为 numpy1 时代构建,与 numpy2 不兼容(ABI 报错)
 mujoco==3.17.0
-numpy==2.4.6
+numpy==2.2.6
 onnx==1.23.2
 pyyaml==6.0.2
-pybullet==3.2.6
+pybullet==3.2.7
 onnxruntime==1.20.1
 cryptography==42.0.8
+tomli>=2.0 ; python_version < "3.11"   # tomllib 的 3.10 backport(3.11+ 用标准库)

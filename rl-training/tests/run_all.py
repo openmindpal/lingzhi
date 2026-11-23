@@ -17,11 +17,11 @@ import traceback
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))   # rl-training
 
-MODULES_FULL = ["t_contract", "t_assembler", "t_cfg_gen", "t_envs", "t_gpu_contract",
-                "t_learn_smoke", "t_quality", "t_pretrain", "t_export_package", "t_negatives",
-                "t_contact_scorer"]
-MODULES_FAST = ["t_contract", "t_assembler", "t_cfg_gen", "t_envs", "t_gpu_contract",
-                "t_quality", "t_pretrain", "t_negatives"]
+MODULES_FULL = ["t_contract", "t_contract_official", "t_assembler", "t_cfg_gen", "t_envs",
+                "t_gpu_contract", "t_learn_smoke", "t_quality", "t_pretrain",
+                "t_export_package", "t_onnx_in_env", "t_negatives", "t_contact_scorer"]
+MODULES_FAST = ["t_contract", "t_contract_official", "t_assembler", "t_cfg_gen", "t_envs",
+                "t_gpu_contract", "t_quality", "t_pretrain", "t_negatives"]
 
 
 def main() -> None:

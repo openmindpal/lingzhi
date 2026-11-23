@@ -6,7 +6,81 @@
 
 profile: g1_refined
 
-# ── 质量标定(简化标度法: 全体 body 质量等比缩放到目标总质量) ──
+# ── 基座选择(官方规格回填 2026-11-23) ──
+# official = MuJoCo Menagerie unitree_g1 g1_29dof_rev_1_0(宇树官方模型,DeepMind 策展):
+#   质量 33.34kg / 几何(mesh)/ 惯量 / 关节限位 / IMU 位(imu_in_pelvis)= 官方原值;
+#   生成器只做平台接口变换(剥执行器/传感器注入/力矩限挂载/末端 site),见 mjcf_gen._official_base。
+# smoke = simulation/assets/models/biped_29dof.xml([样例]短腿拓扑——固定底座冒烟口径,
+#   腿长 0.36m < FALL_Z,不支持自由底座站立训练;仅保留用于冒烟/契约测试)。
+base: official
+
+# ── 每关节 PD 增益(官方口径回填——env_mj 伺服按此向量下发) ──
+# 腿 12 = unitree_rl_gym 官方 RL 参考值(deploy_real 同源);
+# 腰 3 + 臂 14 = 官方 MJCF 位置伺服 kp=500;kd: null = 按 dampratio=1 等价推导
+# (kd = 2·√(kp·dof_M0),env_mj 初始化时由编译模型计算)。
+gains:
+  kp:
+    left_hip_pitch_joint: 100
+    left_hip_roll_joint: 100
+    left_hip_yaw_joint: 100
+    left_knee_joint: 150
+    left_ankle_pitch_joint: 40
+    left_ankle_roll_joint: 40
+    right_hip_pitch_joint: 100
+    right_hip_roll_joint: 100
+    right_hip_yaw_joint: 100
+    right_knee_joint: 150
+    right_ankle_pitch_joint: 40
+    right_ankle_roll_joint: 40
+    waist_yaw_joint: 500
+    waist_roll_joint: 500
+    waist_pitch_joint: 500
+    left_shoulder_pitch_joint: 500
+    left_shoulder_roll_joint: 500
+    left_shoulder_yaw_joint: 500
+    left_elbow_joint: 500
+    left_wrist_roll_joint: 500
+    left_wrist_pitch_joint: 500
+    left_wrist_yaw_joint: 500
+    right_shoulder_pitch_joint: 500
+    right_shoulder_roll_joint: 500
+    right_shoulder_yaw_joint: 500
+    right_elbow_joint: 500
+    right_wrist_roll_joint: 500
+    right_wrist_pitch_joint: 500
+    right_wrist_yaw_joint: 500
+  kd:
+    left_hip_pitch_joint: 2
+    left_hip_roll_joint: 2
+    left_hip_yaw_joint: 2
+    left_knee_joint: 4
+    left_ankle_pitch_joint: 2
+    left_ankle_roll_joint: 2
+    right_hip_pitch_joint: 2
+    right_hip_roll_joint: 2
+    right_hip_yaw_joint: 2
+    right_knee_joint: 4
+    right_ankle_pitch_joint: 2
+    right_ankle_roll_joint: 2
+    waist_yaw_joint: null
+    waist_roll_joint: null
+    waist_pitch_joint: null
+    left_shoulder_pitch_joint: null
+    left_shoulder_roll_joint: null
+    left_shoulder_yaw_joint: null
+    left_elbow_joint: null
+    left_wrist_roll_joint: null
+    left_wrist_pitch_joint: null
+    left_wrist_yaw_joint: null
+    right_shoulder_pitch_joint: null
+    right_shoulder_roll_joint: null
+    right_shoulder_yaw_joint: null
+    right_elbow_joint: null
+    right_wrist_roll_joint: null
+    right_wrist_pitch_joint: null
+    right_wrist_yaw_joint: null
+
+# ── 质量标定(仅 smoke 基座生效;official 基座 = 官方质量原值,不做标度) ──
 total_mass_kg: 35.0          # [样例] 宇树 G1 整机质量规格——规格书回填
 # 完整本体重精化(连杆几何/惯量/执行器动力学) = 官方资产替换点:
 #   用宇树官方 MJCF/URDF 替换生成基座(拓扑接口不变——关节名/序/限位与包同源)

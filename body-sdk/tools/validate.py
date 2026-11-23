@@ -20,7 +20,10 @@ import argparse
 import os
 import re
 import sys
-import tomllib
+try:
+    import tomllib          # Python 3.11+
+except ModuleNotFoundError:  # Python 3.10 fallback
+    import tomli as tomllib
 
 MARGIN = 0.05
 FAMILIES = ("balance", "manipulation", "deform", "expression")

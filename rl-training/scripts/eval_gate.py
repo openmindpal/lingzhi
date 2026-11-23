@@ -90,6 +90,10 @@ def main() -> None:
     prev_a = None
     for _ in range(env.max_ep_steps):
         a = policy(obs)
+        # 契约(action_contract §语义): ONNX 输出 = 绝对关节目标(rad),软限位已钳。
+        # 环境入口为 tanh 域(neutral + a·scale)——逆变换下发,env 内部重做变换+钳制,
+        # 数值精确还原导出目标(与引擎直驱语义一致,不二次缩放)。
+        a = (a - env.neutral[None, :]) / env.action_scale_vec[None, :]
         if prev_a is not None:
             jerks.append(float(np.max(np.abs(a - prev_a))))
         prev_a = a.copy()

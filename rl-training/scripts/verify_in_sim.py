@@ -22,7 +22,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
 import numpy as np
-import tomllib
+from rltrain._compat import tomllib
 
 from rltrain.contract import legal_obs_dims, neutral_in_soft_limits
 from rltrain.g1_cfg import G1Cfg

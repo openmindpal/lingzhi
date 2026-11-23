@@ -105,175 +105,175 @@ torso_channel = 12                    # waist_yaw——单臂律动的躯干反�
 
 [profile.joints.left_hip_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -2.5, max = 3.0 }              # [样例]
+limits = { min = -2.5307, max = 2.8798 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.left_hip_roll_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.5, max = 0.5 }              # [样例]
+limits = { min = -0.5236, max = 2.9671 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.left_hip_yaw_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }              # [样例]
+limits = { min = -2.7576, max = 2.7576 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.left_knee_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.3, max = 2.1 }              # [样例]
+limits = { min = -0.087267, max = 2.8798 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.left_ankle_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.9, max = 0.6 }              # [样例]
+limits = { min = -0.87267, max = 0.5236 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.left_ankle_roll_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.4, max = 0.4 }              # [样例]
+limits = { min = -0.2618, max = 0.2618 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_leg"
 
 [profile.joints.right_hip_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -2.5, max = 3.0 }
+limits = { min = -2.5307, max = 2.8798 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.right_hip_roll_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.5, max = 0.5 }
+limits = { min = -2.9671, max = 0.5236 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.right_hip_yaw_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -2.7576, max = 2.7576 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.right_knee_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.3, max = 2.1 }
+limits = { min = -0.087267, max = 2.8798 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.right_ankle_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.9, max = 0.6 }
+limits = { min = -0.87267, max = 0.5236 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.right_ankle_roll_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.4, max = 0.4 }
+limits = { min = -0.2618, max = 0.2618 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_leg"
 
 [profile.joints.waist_yaw_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -2.6, max = 2.6 }              # [样例]
+limits = { min = -2.618, max = 2.618 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "waist"
 
 [profile.joints.waist_roll_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.6, max = 0.6 }
+limits = { min = -0.52, max = 0.52 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "waist"
 
 [profile.joints.waist_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -0.6, max = 0.6 }
+limits = { min = -0.52, max = 0.52 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "waist"
 
 [profile.joints.left_shoulder_pitch_joint]
 dh = { a = 0.0, alpha = 1.5708, d = 0.0, theta = 0.0 }
-limits = { min = -2.6, max = 2.6 }
+limits = { min = -3.0892, max = 2.6704 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_shoulder_roll_joint]
 dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.5, max = 1.5 }
+limits = { min = -1.5882, max = 2.2515 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_shoulder_yaw_joint]
 dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -2.618, max = 2.618 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_elbow_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.1, theta = 0.0 }
-limits = { min = -1.5, max = 0.0 }
+limits = { min = -1.0472, max = 2.0944 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_wrist_roll_joint]
 dh = { a = 0.0, alpha = 1.5708, d = 0.075, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.97222, max = 1.97222 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_wrist_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.075, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.61443, max = 1.61443 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.left_wrist_yaw_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.61443, max = 1.61443 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "left_arm"
 
 [profile.joints.right_shoulder_pitch_joint]
 dh = { a = 0.0, alpha = 1.5708, d = 0.0, theta = 0.0 }
-limits = { min = -2.6, max = 2.6 }
+limits = { min = -3.0892, max = 2.6704 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_shoulder_roll_joint]
 dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.5, max = 1.5 }
+limits = { min = -2.2515, max = 1.5882 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_shoulder_yaw_joint]
 dh = { a = 0.1, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -2.618, max = 2.618 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_elbow_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.1, theta = 0.0 }
-limits = { min = -1.5, max = 0.0 }
+limits = { min = -1.0472, max = 2.0944 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_wrist_roll_joint]
 dh = { a = 0.0, alpha = 1.5708, d = 0.075, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.97222, max = 1.97222 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_wrist_pitch_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.075, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.61443, max = 1.61443 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 
 [profile.joints.right_wrist_yaw_joint]
 dh = { a = 0.0, alpha = 0.0, d = 0.0, theta = 0.0 }
-limits = { min = -1.0, max = 1.0 }
+limits = { min = -1.61443, max = 1.61443 }   # 官方规格回填 g1_29dof_rev_1_0
 sign = 1
 group = "right_arm"
 

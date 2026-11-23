@@ -8,6 +8,11 @@ import os
 import subprocess
 import sys
 
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(_HERE))          # rl-training
+
+from rltrain._compat import tomllib                 # 唯一兼容点
+
 
 def _load_script(name: str):
     here = os.path.dirname(os.path.abspath(__file__))
@@ -65,7 +70,6 @@ def run(tmp: str) -> None:
     vis.FAILS.clear(); vis.WARNS.clear()
     vis.verify_local(pkg3)
     assert not vis.FAILS, f"三件套整包 FAIL: {vis.FAILS}"
-    import tomllib
     pkgd = tomllib.load(open(os.path.join(pkg3, "body-package.toml"), "rb"))
     assert len(pkgd["policies"]["rows"]) == 2 and len(pkgd["fastbrains"]["rows"]) == 1
 
@@ -98,7 +102,6 @@ def run(tmp: str) -> None:
     vis.FAILS.clear(); vis.WARNS.clear()
     vis.verify_local(pkg2)
     assert not vis.FAILS, f"整包装载门 FAIL: {vis.FAILS}"
-    import tomllib
     rows = tomllib.load(open(os.path.join(pkg2, "body-package.toml"), "rb"))["policies"]["rows"]
     assert len(rows) == 2, f"整包应 2 策略行,实际 {len(rows)}"
     print("  export/package: 单包/整包合并/装载门/负例拒收 全部通过")

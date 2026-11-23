@@ -90,11 +90,13 @@ def _shape_of_urdf(geom_el) -> tuple[str, dict]:
 def main() -> None:
     import mujoco
 
-    m = mujoco.MjModel.from_xml_path(build_free_base_mjcf())
+    # 与 URDF 同源(sim2sim_check.mode_policy 的 URDF = 固定底座变体导出)
+    from rltrain.mjcf_gen import build_fixed_base_variant
+    m = mujoco.MjModel.from_xml_path(build_fixed_base_variant())
     root = ET.parse(URDF).getroot()
     links = {el.get("name"): el for el in root.findall("link")}
     joints_by_child = {j.find("child").get("link"): j for j in root.findall("joint")}
-    print(f"[diff] {os.path.basename(build_free_base_mjcf())} ↔ {os.path.basename(URDF)}")
+    print(f"[diff] {os.path.basename(build_fixed_base_variant())} ↔ {os.path.basename(URDF)}")
 
     for b in range(1, m.nbody):
         name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, b)
@@ -124,7 +126,10 @@ def main() -> None:
                    f"jnt_pos={m.jnt_pos[jid]}≠0——URDF 需中间固定关节,生成器必须诚实报错")
             j = joints_by_child.get(name)
             _check(f"{name}: URDF joint 存在", j is not None)
-            if j is not None:
+            if j is not None and j.get("type") == "fixed":
+                _check(f"{name}: MJCF 有关节但 URDF 为 fixed", False,
+                       "URDF joint type=fixed——导出器把活动关节写成了焊接")
+            elif j is not None:
                 org = j.find("origin")
                 want_xyz, want_rpy = m.body_pos[b], _rpy_from_quat(m.body_quat[b])
                 got_xyz = np.array([float(v) for v in (org.get("xyz") or "0 0 0").split()])
